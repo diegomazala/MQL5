@@ -20,6 +20,8 @@
 //| Parameter=MeanMethod,ENUM_MA_METHOD,MODE_SMA,Method of mean MA   |
 //| Parameter=SlowPeriod,int,20,Period of slow MA                    |
 //| Parameter=SlowMethod,ENUM_MA_METHOD,MODE_SMA,Method of slow MA   |
+//| Parameter=Shift,int,0,Time shift                                 |
+//| Parameter=Applied,ENUM_APPLIED_PRICE,PRICE_CLOSE,Prices series   |
 //+------------------------------------------------------------------+
 // wizard description end
 //+------------------------------------------------------------------+
@@ -31,9 +33,9 @@
 class CSignalDiGui : public CExpertSignal
   {
 protected:
-   CiCustom          m_fast_ma;        // The indicator as an object
-   CiCustom          m_mean_ma;        // The indicator as an object
-   CiCustom          m_slow_ma;        // The indicator as an object
+   CiMA          m_fast_ma;        // The indicator as an object
+   CiMA          m_mean_ma;        // The indicator as an object
+   CiMA          m_slow_ma;        // The indicator as an object
    
    //--- Configurable module parameters
    int               m_period_fast;    // Period of the fast MA
@@ -42,6 +44,8 @@ protected:
    ENUM_MA_METHOD    m_method_fast;    // Type of smoothing of the fast MA
    ENUM_MA_METHOD    m_method_mean;    // Type of smoothing of the fast MA
    ENUM_MA_METHOD    m_method_slow;    // Type of smoothing of the slow MA
+   int               m_ma_shift;       // the "time shift" parameter of the MA indicators
+   ENUM_APPLIED_PRICE m_ma_applied;    // the "object of averaging" parameter of the indicator   
 
 public:
                      CSignalDiGui(void);
@@ -63,6 +67,8 @@ public:
    void              MeanMethod(ENUM_MA_METHOD value)    { m_method_mean=value;        }
    void              SlowPeriod(int value)               { m_period_slow=value;        }
    void              SlowMethod(ENUM_MA_METHOD value)    { m_method_slow=value;        }
+   void              Shift(int value)                    { m_ma_shift=value;           }
+   void              Applied(ENUM_APPLIED_PRICE value)   { m_ma_applied=value;         }
 
    //--- Access to indicator data
    double            FastMA(const int index)             const { return(m_fast_ma.GetData(0,index)); }
@@ -71,6 +77,7 @@ public:
 
 protected:
    //--- Creating MA indicators
+   bool              InitMA(CIndicators *indicators);
    bool              CreateFastMA(CIndicators *indicators);
    bool              CreateMeanMA(CIndicators *indicators);
    bool              CreateSlowMA(CIndicators *indicators);
@@ -160,6 +167,52 @@ bool CSignalDiGui::InitIndicators(CIndicators *indicators)
 
 
 
+//+------------------------------------------------------------------+
+//| Creates the "Fast MA" indicator                                  |
+//+------------------------------------------------------------------+
+/*
+bool CSignalDiGui::InitMA(CIndicators *indicators)
+  {
+//--- Checking the pointer
+   if(indicators==NULL) return(false);
+//--- Adding an object to the collection
+   if(!indicators.Add(GetPointer(m_fast_ma)))
+     {
+      printf(__FUNCTION__+": Error adding an object of the fast MA");
+      return(false);
+     }
+   if(!indicators.Add(GetPointer(m_mean_ma)))
+     {
+      printf(__FUNCTION__+": Error adding an object of the mean MA");
+      return(false);
+     }
+   if(!indicators.Add(GetPointer(m_slow_ma)))
+     {
+      printf(__FUNCTION__+": Error adding an object of the slow MA");
+      return(false);
+     }
+//--- MA Fast initialization
+   if(!m_fast_ma.Create(m_symbol.Name(),m_period,m_period_fast,m_ma_shift,m_method_fast,m_ma_applied))
+     {
+      printf(__FUNCTION__+": error initializing fast_MA object");
+      return(false);
+     }
+//--- MA Mean initialization
+   if(!m_mean_ma.Create(m_symbol.Name(),m_period,m_period_mean,m_ma_shift,m_method_mean,m_ma_applied))
+     {
+      printf(__FUNCTION__+": error initializing mean_MA object");
+      return(false);
+     }
+//--- MA Fast initialization
+   if(!m_slow_ma.Create(m_symbol.Name(),m_period,m_period_slow,m_ma_shift,m_method_slow,m_ma_applied))
+     {
+      printf(__FUNCTION__+": error initializing slow_MA object");
+      return(false);
+     }    
+//--- Reached this part, so the function was successful, return true
+   return(true);
+  }
+*/
 
 //+------------------------------------------------------------------+
 //| Creates the "Fast MA" indicator                                  |
@@ -174,6 +227,13 @@ bool CSignalDiGui::CreateFastMA(CIndicators *indicators)
       printf(__FUNCTION__+": Error adding an object of the fast MA");
       return(false);
      }
+     
+     if(!m_fast_ma.Create(m_symbol.Name(),m_period,m_period_fast,m_ma_shift,m_method_fast,m_ma_applied))
+     {
+      printf(__FUNCTION__+": error initializing fast_MA object");
+      return(false);
+     }
+/*     
 //--- Setting parameters of the fast MA
    MqlParam parameters[4];
 //---
@@ -194,6 +254,7 @@ bool CSignalDiGui::CreateFastMA(CIndicators *indicators)
 //--- Number of buffers
    if(!m_fast_ma.NumBuffers(1)) return(false);
 //--- Reached this part, so the function was successful, return true
+*/    
    return(true);
   }
 
@@ -212,6 +273,14 @@ bool CSignalDiGui::CreateMeanMA(CIndicators *indicators)
       printf(__FUNCTION__+": Error adding an object of the mean MA");
       return(false);
      }
+     
+     if(!m_mean_ma.Create(m_symbol.Name(),m_period,m_period_mean,m_ma_shift,m_method_mean,m_ma_applied))
+     {
+      printf(__FUNCTION__+": error initializing mean_MA object");
+      return(false);
+     }
+     
+/*     
 //--- Setting parameters of the mean MA
    MqlParam parameters[4];
 //---
@@ -231,6 +300,7 @@ bool CSignalDiGui::CreateMeanMA(CIndicators *indicators)
      }
 //--- Number of buffers
    if(!m_mean_ma.NumBuffers(1)) return(false);
+*/   
 //--- Reached this part, so the function was successful, return true
    return(true);
   }
@@ -249,6 +319,13 @@ bool CSignalDiGui::CreateSlowMA(CIndicators *indicators)
       printf(__FUNCTION__+": Error adding an object of the slow MA");
       return(false);
      }
+     
+   if(!m_slow_ma.Create(m_symbol.Name(),m_period,m_period_slow,m_ma_shift,m_method_slow,m_ma_applied))
+     {
+      printf(__FUNCTION__+": error initializing slow_MA object");
+      return(false);
+     }
+/*     
 //--- Setting parameters of the slow MA
    MqlParam parameters[4];
 //---
@@ -268,6 +345,7 @@ bool CSignalDiGui::CreateSlowMA(CIndicators *indicators)
      }
 //--- Number of buffers
    if(!m_slow_ma.NumBuffers(1)) return(false);
+*/   
 //--- Reached this part, so the function was successful, return true
    return(true);
   }
@@ -290,7 +368,7 @@ int CSignalDiGui::LongCondition(void)
    double prev_mean_value=MeanMA(idx+1);
    double prev_slow_value=SlowMA(idx+1);
 //--- If the fast MA crossed the slow MA from bottom upwards on the last two closed bars
-   if((last_fast_value>last_mean_value) && (prev_fast_value<prev_mean_value))
+   if((last_mean_value>last_slow_value) && (prev_mean_value<prev_slow_value))
      {
       signal=100; // There is a signal to buy
      }
@@ -316,7 +394,7 @@ int CSignalDiGui::ShortCondition(void)
    double prev_mean_value=FastMA(idx+1);
    double prev_slow_value=SlowMA(idx+1);
 //--- If the fast MA crossed the slow MA from up downwards on the last two closed bars
-   if((last_fast_value<last_mean_value) && (prev_fast_value>prev_mean_value))
+   if((last_mean_value<last_slow_value) && (prev_mean_value>prev_slow_value))
      {
       signal=100; // There is a signal to sell
      }

@@ -10,11 +10,8 @@
 //| Include                                                          |
 //+------------------------------------------------------------------+
 #include <Expert\Expert.mqh>
-//--- available signals
 #include <Expert\Signal\SignalDiGui.mqh>
-//--- available trailing
 #include <Expert\Trailing\TrailingNone.mqh>
-//--- available money management
 #include <Expert\Money\MoneyFixedLot.mqh>
 //+------------------------------------------------------------------+
 //| Inputs                                                           |
@@ -36,7 +33,8 @@ input int            Signal_DG_MeanPeriod =8;        // DiGui(3,MODE_SMA,8,MODE_
 input ENUM_MA_METHOD Signal_DG_MeanMethod =MODE_SMA; // DiGui(3,MODE_SMA,8,MODE_SMA,...) Method of mean MA
 input int            Signal_DG_SlowPeriod =20;       // DiGui(3,MODE_SMA,8,MODE_SMA,...) Period of slow MA
 input ENUM_MA_METHOD Signal_DG_SlowMethod =MODE_SMA; // DiGui(3,MODE_SMA,8,MODE_SMA,...) Method of slow MA
-input double         Signal_DG_Weight     =1.0;      // DiGui(3,MODE_SMA,8,MODE_SMA,...) Weight [0...1.0]
+input int            Signal_DG_Shift      =0;        // 
+input ENUM_APPLIED_PRICE Signal_DG_Applied=PRICE_CLOSE;// 
 //--- inputs for money
 input double         Money_FixLot_Percent =100;     // Percent
 input double         Money_FixLot_Lots    =100;     // Fixed volume
@@ -91,7 +89,6 @@ int OnInit()
    filter0.MeanMethod(Signal_DG_MeanMethod);
    filter0.SlowPeriod(Signal_DG_SlowPeriod);
    filter0.SlowMethod(Signal_DG_SlowMethod);
-   filter0.Weight(Signal_DG_Weight);
 //--- Creation of trailing object
    CTrailingNone *trailing=new CTrailingNone;
    if(trailing==NULL)
