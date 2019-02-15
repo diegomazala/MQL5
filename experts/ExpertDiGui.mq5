@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                        DiGui.mq5 |
+//|                                                  ExpertDiGui.mq5 |
 //|                        Copyright 2019, MetaQuotes Software Corp. |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -35,6 +35,7 @@ input int            Signal_DG_SlowPeriod =20;       // DiGui(3,MODE_SMA,8,MODE_
 input ENUM_MA_METHOD Signal_DG_SlowMethod =MODE_SMA; // DiGui(3,MODE_SMA,8,MODE_SMA,...) Method of slow MA
 input int            Signal_DG_Shift      =0;        // 
 input ENUM_APPLIED_PRICE Signal_DG_Applied=PRICE_CLOSE;// 
+input int            Signal_DG_ADXPeriod  =8;        // DiGui(8) Period of ADX
 //--- inputs for money
 input double         Money_FixLot_Percent =100;     // Percent
 input double         Money_FixLot_Lots    =100;     // Fixed volume
@@ -89,6 +90,7 @@ int OnInit()
    filter0.MeanMethod(Signal_DG_MeanMethod);
    filter0.SlowPeriod(Signal_DG_SlowPeriod);
    filter0.SlowMethod(Signal_DG_SlowMethod);
+   filter0.ADXPeriod(Signal_DG_ADXPeriod);
 //--- Creation of trailing object
    CTrailingNone *trailing=new CTrailingNone;
    if(trailing==NULL)
