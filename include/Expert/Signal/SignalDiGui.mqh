@@ -1,13 +1,13 @@
 //+------------------------------------------------------------------+
 //|                                                  SignalDiGui.mqh |
-//|                   Copyright 2009-2013, MetaQuotes Software Corp. |
-//|                                              http://www.mql5.com |
+//|                                      Copyright 2009-2019, DiGUI. |
+//|                               http://github.com/diegomazala/MQL5 |
 //+------------------------------------------------------------------+
 #include <Expert\ExpertSignal.mqh>
 // wizard description start
 //+------------------------------------------------------------------+
 //| Description of the class                                         |
-//| Title=Signals of indicator 'DiGui'                               |
+//| Title=Signals of indicator 'DiGui' (wip)                         |
 //| Type=SignalAdvanced                                              |
 //| Name=DiGui                                                       |
 //| ShortName=DG                                                     |
@@ -22,6 +22,7 @@
 //| Parameter=Shift,int,0,Time shift                                 |
 //| Parameter=Applied,ENUM_APPLIED_PRICE,PRICE_CLOSE,Prices series   |
 //| Parameter=ADXPeriod,int,8,Period of ADX                          |
+//| Parameter=ADXLevel,double,32,Level of ADX                        |
 //+------------------------------------------------------------------+
 // wizard description end
 //+------------------------------------------------------------------+
@@ -36,7 +37,7 @@ protected:
    CiMA          m_fast_ma;        // The indicator as an object
    CiMA          m_mean_ma;        // The indicator as an object
    CiMA          m_slow_ma;        // Slow MA indicator as an object
-   CiADX		 m_adx;			   // ADX indicator as an object
+   CiADX		     m_adx;			     // ADX indicator as an object
    
    //--- Configurable module parameters
    int               m_period_fast;    // Period of the fast MA
@@ -49,6 +50,7 @@ protected:
    ENUM_APPLIED_PRICE m_ma_applied;    // the "object of averaging" parameter of the indicator   
 
    int               m_period_adx;     // Period of the ADX
+   double            m_level_adx;      // Level of thee ADX
 
 public:
                      CSignalDiGui(void);
@@ -58,6 +60,12 @@ public:
    virtual bool      ValidationSettings(void);
    //--- method of creating the indicator and timeseries
    virtual bool      InitIndicators(CIndicators *indicators);
+   
+   virtual bool      CheckOpenLong(double& price,double& sl,double& tp,datetime& expiration);
+   virtual bool      CheckOpenShort(double& price,double& sl,double& tp,datetime& expiration);
+   virtual bool      CheckCloseLong(double&  price);
+   virtual bool      CheckCloseShort(double&  price);
+   
    //--- methods of checking if the market models are formed
    virtual int       LongCondition(void);
    virtual int       ShortCondition(void);
@@ -74,7 +82,8 @@ public:
    void              Applied(ENUM_APPLIED_PRICE value)   { m_ma_applied=value;         }
    
    void              ADXPeriod(int value)                { m_period_adx=value;         }
-
+   void              ADXLevel(double value)              { m_level_adx=value;          }
+   
    //--- Access to indicator data
    double            FastMA(const int index)             const { return(m_fast_ma.GetData(0,index)); }
    double            MeanMA(const int index)             const { return(m_mean_ma.GetData(0,index)); }
@@ -102,7 +111,8 @@ CSignalDiGui::CSignalDiGui(void) :
                              m_method_mean(MODE_SMA),    // Default smoothing method of the mean MA
                              m_period_slow(20),          // Default period of the slow MA is 20
                              m_method_slow(MODE_SMA),    // Default smoothing method of the slow MA
-                             m_period_adx(8)			 // Default period of the ADX is 8
+                             m_period_adx(8),			   // Default period of the ADX is 8
+                             m_level_adx(32.0)
   {
 //--- initialization of protected data
    m_used_series=USE_SERIES_OPEN+USE_SERIES_HIGH+USE_SERIES_LOW+USE_SERIES_CLOSE;
@@ -283,82 +293,132 @@ bool CSignalDiGui::CreateADX(CIndicators *indicators)
    return(true);
   }
 
+bool  CSignalDiGui::CheckOpenLong( 
+   double&    price,          // price 
+   double&    sl,             // Stop Loss 
+   double&    tp,             // Take Profit 
+   datetime&  expiration      // expiration 
+   )
+{
+   int idx = StartIndex();
+   return (FastMA(idx) > MeanMA(idx));
+}
+
+
+bool  CSignalDiGui::CheckOpenShort( 
+   double&    price,          // price 
+   double&    sl,             // Stop Loss 
+   double&    tp,             // Take Profit 
+   datetime&  expiration      // expiration 
+   )
+{
+   int idx = StartIndex();
+   return (FastMA(idx) < MeanMA(idx));
+}
+
+
+bool  CSignalDiGui::CheckCloseLong(double& price)
+{
+   int idx = StartIndex();
+   return (FastMA(idx) < MeanMA(idx));
+}
+
+
+bool  CSignalDiGui::CheckCloseShort(double& price)
+{
+   int idx = StartIndex();
+   return (FastMA(idx) > MeanMA(idx));
+}
+
 //+------------------------------------------------------------------+
 //| "Voting" that price will grow.                                   |
 //+------------------------------------------------------------------+
 int CSignalDiGui::LongCondition(void)
-  {
-    int signal=0;
-//--- For operation with ticks idx=0, for operation with formed bars idx=1
+{
+   int signal=0;
+   //--- For operation with ticks idx=0, for operation with formed bars idx=1
    int idx=StartIndex();
-//--- Values of MAs at the last formed bar
+   //--- Values of MAs at the last formed bar
    double last_fast_value=FastMA(idx);
    double last_mean_value=MeanMA(idx);
    double last_slow_value=SlowMA(idx);
-//--- Values of MAs at the last but one formed bar
+   //--- Values of MAs at the last but one formed bar
    double prev_fast_value=FastMA(idx+1);
    double prev_mean_value=MeanMA(idx+1);
    double prev_slow_value=SlowMA(idx+1);
+   
+   for (int i = idx; i< (idx + m_period_fast); ++i)
+   {
+      // ADX Cross Di- Di+
+      if ( ADXPlus(i) > ADXMinus(i) && ADXPlus(i + 1) < ADXMinus(i + 1) )
+      {
+         signal += (m_period_fast - i) * 10;
+         //signal += ((int)(ADXMain(i) - ADXMain(i - 1)));
+         //signal += ((int)(ADXMain(i) - m_level_adx) * 2);
+         Print("=========== LongCondition ", signal);
+         //Print("=========== ", ADXPlus(i), " > ", ADXMinus(i), " && " ,  ADXPlus(i - 1), " < ", ADXMinus(i - 1));
+         
+//         if(FastMA(i) > FastMA(i + 1))
+//            signal += 5;
+//         else
+//            signal -= 5;
+      }
 
-   double prev_adx_plus  = ADXPlus(idx + 1);
-   double prev_adx_minus = ADXMinus(idx + 1);
-   double prev_adx_main  = ADXMain(idx + 1);
-   double last_adx_plus  = ADXPlus(idx);
-   double last_adx_minus = ADXMinus(idx);
-   double last_adx_main  = ADXMain(idx);
-
-//--- If the fast MA crossed the slow MA from bottom upwards on the last two closed bars
-   if(
-   	//(last_mean_value>last_slow_value) && (prev_mean_value<prev_slow_value)
-   	//&&
-   	( last_fast_value > prev_fast_value)
-   	&&
-   	(last_adx_minus < last_adx_plus) && (prev_adx_minus > prev_adx_plus)
-   	)
-     {
-      signal=100; // There is a signal to buy
-     }
-//--- Return the signal value
-   return(signal);
-  }
+      
+   }
+     
+     
+     
+      //--- Return the signal value
+      if (PositionsTotal() == 0)
+         return MathMax(0, signal);
+      else
+         return 0;
+}
 
 
 //+------------------------------------------------------------------+
 //| "Voting" that price will fall.                                   |
 //+------------------------------------------------------------------+
 int CSignalDiGui::ShortCondition(void)
-  {
+{
    int signal=0;
-//--- For operation with ticks idx=0, for operation with formed bars idx=1
+   //--- For operation with ticks idx=0, for operation with formed bars idx=1
    int idx=StartIndex();
-//--- Values of MAs at the last formed bar
+   //--- Values of MAs at the last formed bar
    double last_fast_value=FastMA(idx);
    double last_mean_value=SlowMA(idx);
    double last_slow_value=SlowMA(idx);
-//--- Values of MAs at the last but one formed bar
+   //--- Values of MAs at the last but one formed bar
    double prev_fast_value=FastMA(idx+1);
    double prev_mean_value=FastMA(idx+1);
    double prev_slow_value=SlowMA(idx+1);
 
-   double prev_adx_plus  = ADXPlus(idx + 1);
-   double prev_adx_minus = ADXMinus(idx + 1);
-   double prev_adx_main  = ADXMain(idx + 1);
-   double last_adx_plus  = ADXPlus(idx);
-   double last_adx_minus = ADXMinus(idx);
-   double last_adx_main  = ADXMain(idx);
+   for (int i = idx; i< (idx + m_period_fast); ++i)
+   {
+      // ADX Cross
+      if ( ADXMinus(i) > ADXPlus(i) && ADXMinus(i + 1) < ADXPlus(i + 1) )
+      {
+         signal += (m_period_fast - i) * 10;
+         //signal += ((int)(ADXMain(i) - ADXMain(i + 1)));
+         //signal += ((int)(ADXMain(i) - m_level_adx) * 2); 
+         Print("=========== ShortCondition ", signal);
+         //Print("=========== ", ADXPlus(i), " > ", ADXMinus(i), " && " ,  ADXPlus(i - 1), " < ", ADXMinus(i - 1));
+         
+//         if(FastMA(i) < FastMA(i + 1))
+//            signal += 5;
+//         else
+//            signal -= 5;
+      }
+      
+      
+   }
 
-//--- If the fast MA crossed the slow MA from up downwards on the last two closed bars
-   if(
-   	//(last_mean_value<last_slow_value) && (prev_mean_value>prev_slow_value)
-   	//&&
-   	(last_fast_value < prev_fast_value)
-   	&&
-   	(last_adx_minus > last_adx_plus) && (prev_adx_minus < prev_adx_plus)
-   	)
-     {
-      signal=100; // There is a signal to sell
-     }
-//--- Return the signal value
-   return(signal);
-  }
+      //--- Return the signal value
+      if (PositionsTotal() == 0)
+         return MathMax(0, signal);
+      else
+         return 0;
+}
+
 //+------------------------------------------------------------------+

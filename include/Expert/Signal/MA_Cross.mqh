@@ -21,9 +21,9 @@
 //| ShortName=MaCross                                                |
 //| Class=MA_Cross                                                   |
 //| Page=Not needed                                                  |
-//| Parameter=FastPeriod,int,13,Period of fast MA                    |
+//| Parameter=FastPeriod,int,3,Period of fast MA                    |
 //| Parameter=FastMethod,ENUM_MA_METHOD,MODE_SMA,Method of fast MA   |
-//| Parameter=SlowPeriod,int,21,Period of slow MA                    |
+//| Parameter=SlowPeriod,int,8,Period of slow MA                    |
 //| Parameter=SlowMethod,ENUM_MA_METHOD,MODE_SMA,Method of slow MA   |
 //+------------------------------------------------------------------+
 // wizard description end
@@ -70,9 +70,9 @@ protected:
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-MA_Cross::MA_Cross(void) : m_period_fast(8),
+MA_Cross::MA_Cross(void) : m_period_fast(3),
                            m_method_fast(MODE_SMA),
-                           m_period_slow(20),
+                           m_period_slow(8),
                            m_method_slow(MODE_SMA)
   {
   }

@@ -27,12 +27,12 @@ bool                 Expert_EveryTick         =false;          // EA operation i
 input int            Signal_ThresholdOpen     =10;             // Signal threshold value to open [0...100]
 input int            Signal_ThresholdClose    =10;             // Signal threshold value to close [0...100]
 input double         Signal_PriceLevel        =0.0;            // Price level to execute a deal
-input double         Signal_StopLevel         =50.0;           // Stop Loss level (in points)
-input double         Signal_TakeLevel         =50.0;           // Take Profit level (in points)
+input double         Signal_StopLevel         =500.0;           // Stop Loss level (in points)
+input double         Signal_TakeLevel         =30.0;           // Take Profit level (in points)
 input int            Signal_Expiration        =4;              // Expiration of pending orders (in bars)
-input int            Signal_MaCross_FastPeriod=8;             // My_MA_Cross(13,MODE_SMA,21,...) Period of fast MA
+input int            Signal_MaCross_FastPeriod=3;             // My_MA_Cross(13,MODE_SMA,21,...) Period of fast MA
 input ENUM_MA_METHOD Signal_MaCross_FastMethod=MODE_SMA;       // My_MA_Cross(13,MODE_SMA,21,...) Method of fast MA
-input int            Signal_MaCross_SlowPeriod=20;             // My_MA_Cross(13,MODE_SMA,21,...) Period of slow MA
+input int            Signal_MaCross_SlowPeriod=8;             // My_MA_Cross(13,MODE_SMA,21,...) Period of slow MA
 input ENUM_MA_METHOD Signal_MaCross_SlowMethod=MODE_SMA;       // My_MA_Cross(13,MODE_SMA,21,...) Method of slow MA
 input double         Signal_MaCross_Weight    =1.0;            // My_MA_Cross(13,MODE_SMA,21,...) Weight [0...1.0]
 //--- inputs for money
