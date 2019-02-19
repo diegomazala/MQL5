@@ -61,16 +61,12 @@ public:
    //--- method of creating the indicator and timeseries
    virtual bool      InitIndicators(CIndicators *indicators);
    
-   virtual bool      CheckOpenLong(double& price,double& sl,double& tp,datetime& expiration);
-   virtual bool      CheckOpenShort(double& price,double& sl,double& tp,datetime& expiration);
-   virtual bool      CheckCloseLong(double&  price);
-   virtual bool      CheckCloseShort(double&  price);
    
    //--- methods of checking if the market models are formed
    virtual int       LongCondition(void);
    virtual int       ShortCondition(void);
-
    
+  
    //--- Methods for setting
    void              FastPeriod(int value)               { m_period_fast=value;        }
    void              FastMethod(ENUM_MA_METHOD value)    { m_method_fast=value;        }
@@ -293,42 +289,7 @@ bool CSignalDiGui::CreateADX(CIndicators *indicators)
    return(true);
   }
 
-bool  CSignalDiGui::CheckOpenLong( 
-   double&    price,          // price 
-   double&    sl,             // Stop Loss 
-   double&    tp,             // Take Profit 
-   datetime&  expiration      // expiration 
-   )
-{
-   int idx = StartIndex();
-   return (FastMA(idx) > MeanMA(idx));
-}
 
-
-bool  CSignalDiGui::CheckOpenShort( 
-   double&    price,          // price 
-   double&    sl,             // Stop Loss 
-   double&    tp,             // Take Profit 
-   datetime&  expiration      // expiration 
-   )
-{
-   int idx = StartIndex();
-   return (FastMA(idx) < MeanMA(idx));
-}
-
-
-bool  CSignalDiGui::CheckCloseLong(double& price)
-{
-   int idx = StartIndex();
-   return (FastMA(idx) < MeanMA(idx));
-}
-
-
-bool  CSignalDiGui::CheckCloseShort(double& price)
-{
-   int idx = StartIndex();
-   return (FastMA(idx) > MeanMA(idx));
-}
 
 //+------------------------------------------------------------------+
 //| "Voting" that price will grow.                                   |
@@ -346,28 +307,38 @@ int CSignalDiGui::LongCondition(void)
    double prev_fast_value=FastMA(idx+1);
    double prev_mean_value=MeanMA(idx+1);
    double prev_slow_value=SlowMA(idx+1);
-   
+
+   if (FastMA(idx) < MeanMA(idx))
+      return 0;
+      
+   if (!(ADXMain(idx) > ADXMain(idx + 1) && ADXMain(idx + 1) > ADXMain(idx + 2)))
+      return 0;
+      
+   if (!(FastMA(idx) > FastMA(idx + 1) && FastMA(idx + 1) > FastMA(idx + 2)))
+      return 0;
+
+   // agulhada
+   if (FastMA(idx) > MeanMA(idx) && SlowMA(idx) < MeanMA(idx)
+      && FastMA(idx + 2) < MeanMA(idx + 2) && SlowMA(idx + 2) > MeanMA(idx + 2))
+   {
+      return 100;
+   }
+
    for (int i = idx; i< (idx + m_period_fast); ++i)
    {
-      // ADX Cross Di- Di+
-      if ( ADXPlus(i) > ADXMinus(i) && ADXPlus(i + 1) < ADXMinus(i + 1) )
-      {
-         signal += (m_period_fast - i) * 10;
-         //signal += ((int)(ADXMain(i) - ADXMain(i - 1)));
-         //signal += ((int)(ADXMain(i) - m_level_adx) * 2);
-         Print("=========== LongCondition ", signal);
-         //Print("=========== ", ADXPlus(i), " > ", ADXMinus(i), " && " ,  ADXPlus(i - 1), " < ", ADXMinus(i - 1));
+      if (FastMA(idx) < FastMA(idx + 1))
+         return 0;
          
-//         if(FastMA(i) > FastMA(i + 1))
-//            signal += 5;
-//         else
-//            signal -= 5;
-      }
-
+//      if (SlowMA(idx) > SlowMA(idx + 1))
+//         return 0;
+         
+      // ADX Cross
+      //if ( ADXMinus(i) > ADXPlus(i) && ADXMinus(i + 1) < ADXPlus(i + 1) )
       
+      if (ADXMain(i) > m_level_adx)
+         signal += 10;
+     
    }
-     
-     
      
       //--- Return the signal value
       if (PositionsTotal() == 0)
@@ -382,6 +353,8 @@ int CSignalDiGui::LongCondition(void)
 //+------------------------------------------------------------------+
 int CSignalDiGui::ShortCondition(void)
 {
+   return 0;
+   
    int signal=0;
    //--- For operation with ticks idx=0, for operation with formed bars idx=1
    int idx=StartIndex();
@@ -393,24 +366,28 @@ int CSignalDiGui::ShortCondition(void)
    double prev_fast_value=FastMA(idx+1);
    double prev_mean_value=FastMA(idx+1);
    double prev_slow_value=SlowMA(idx+1);
+   
+   if (FastMA(idx) > MeanMA(idx))
+      return 0;
+
+   // agulhada
+   if (FastMA(idx) < MeanMA(idx) && SlowMA(idx) > MeanMA(idx)
+      && FastMA(idx + 2) > MeanMA(idx + 2) && SlowMA(idx + 2) < MeanMA(idx + 2))
+   {
+      return 100;
+   }
 
    for (int i = idx; i< (idx + m_period_fast); ++i)
    {
-      // ADX Cross
-      if ( ADXMinus(i) > ADXPlus(i) && ADXMinus(i + 1) < ADXPlus(i + 1) )
-      {
-         signal += (m_period_fast - i) * 10;
-         //signal += ((int)(ADXMain(i) - ADXMain(i + 1)));
-         //signal += ((int)(ADXMain(i) - m_level_adx) * 2); 
-         Print("=========== ShortCondition ", signal);
-         //Print("=========== ", ADXPlus(i), " > ", ADXMinus(i), " && " ,  ADXPlus(i - 1), " < ", ADXMinus(i - 1));
+      if (FastMA(idx) < FastMA(idx + 1))
+         return 0;
          
-//         if(FastMA(i) < FastMA(i + 1))
-//            signal += 5;
-//         else
-//            signal -= 5;
-      }
+      // ADX Cross
+      //if ( ADXMinus(i) > ADXPlus(i) && ADXMinus(i + 1) < ADXPlus(i + 1) )
       
+      if (ADXMain(i) > m_level_adx)
+         signal += 10;
+        
       
    }
 
@@ -421,4 +398,7 @@ int CSignalDiGui::ShortCondition(void)
          return 0;
 }
 
+
+
 //+------------------------------------------------------------------+
+
