@@ -23,6 +23,8 @@
 //| Parameter=Applied,ENUM_APPLIED_PRICE,PRICE_CLOSE,Prices series   |
 //| Parameter=ADXPeriod,int,8,Period of ADX                          |
 //| Parameter=ADXLevel,double,32,Level of ADX                        |
+//| Parameter=EpisilonDD,double,0.001,Max distance between cross lines     |
+//| Parameter=OffsetDD,double,0.01,Max distance of cross lines from MeanDD |
 //+------------------------------------------------------------------+
 // wizard description end
 //+------------------------------------------------------------------+
@@ -51,6 +53,10 @@ protected:
 
    int               m_period_adx;     // Period of the ADX
    double            m_level_adx;      // Level of thee ADX
+   
+   double            m_dd_epsilon;     // Max distance between cross lines
+   double            m_dd_offset;      // Max distance of cross lines from MeanDD
+   
 
 public:
                      CSignalDiGui(void);
@@ -85,9 +91,12 @@ public:
    double            MeanMA(const int index)             const { return(m_mean_ma.GetData(0,index)); }
    double            SlowMA(const int index)             const { return(m_slow_ma.GetData(0,index)); }
 
-   double            FastDidi(const int index)             const { return(m_fast_ma.GetData(0,index) / m_mean_ma.GetData(0,index)); }
-   double            MeanDidi(const int index)             const { return(1.00); }
-   double            SlowDidi(const int index)             const { return(m_slow_ma.GetData(0,index) / m_mean_ma.GetData(0,index)); }
+   double            FastDD(const int index)             const { return(m_fast_ma.GetData(0,index) / m_mean_ma.GetData(0,index)); }
+   double            MeanDD(const int index)             const { return(1.00); }
+   double            SlowDD(const int index)             const { return(m_slow_ma.GetData(0,index) / m_mean_ma.GetData(0,index)); }
+   
+   double            EpsilonDD(const double value)       const { return m_dd_epsilon; }
+   double            OffsetDD(const double value)        const { return m_dd_offset; }
    
    double            ADXPlus(const int index)            const { return(m_adx.Plus(index)); }
    double            ADXMinus(const int index)           const { return(m_adx.Minus(index));}
@@ -105,7 +114,31 @@ protected:
    bool              CreateSlowMA(CIndicators *indicators);
    //--- Creating ADX indicators
    bool              CreateADX(CIndicators *indicators);
+   
+   int               CheckAgulhadaBuy(int idx) const;
+   int               CheckAgulhadaSell(int idx) const;
+   bool              CheckDDCrossFastMeanBuy(int idx) const;
+   bool              CheckDDCrossFastMeanSell(int idx) const;
+   bool              CheckDDCrossFastSlowBuy(int idx) const;
+   bool              CheckDDCrossFastSlowSell(int idx) const;
+
 };
+
+
+bool AreEquals(double a, double b, double epsilon = 0.001)
+{
+    return MathAbs(a - b) < epsilon;
+}
+bool AreLEquals(double a, double b, double epsilon = 0.001)
+{
+    return (a < b) && AreEquals(a, b, epsilon);
+}
+bool AreGEquals(double a, double b, double epsilon = 0.001)
+{
+    return (a > b) && AreEquals(a, b, epsilon);
+}
+
+
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
@@ -383,20 +416,15 @@ int CSignalDiGui::LongCondition(void)
    int idx=StartIndex();
    int signal=0;
 
-   //  if (MathAbs(FastDidi(idx) - MeanDidi(idx)) > 0.01)
+   //  if (MathAbs(FastDD(idx) - MeanDD(idx)) > 0.01)
    //     return 0;
    
-   return 0;
-
-
-   if (  // Agulhada no candle atual
-      (FastDidi(idx) >= MeanDidi(idx) && FastDidi(idx) >= SlowDidi(idx) &&
-      FastDidi(idx + 1) <= MeanDidi(idx + 1) && FastDidi(idx + 1) <= SlowDidi(idx + 1))
-      )
-   {
-      return 100;
-   }
-
+   ///////////////////////////////////////////////////////////////////
+   // Existe AGULHADA?
+   // 
+   return CheckAgulhadaBuy(idx);
+   //
+   ///////////////////////////////////////////////////////////////////
 
 
    return 0;
@@ -428,7 +456,7 @@ int CSignalDiGui::LongCondition(void)
    // Tratando Média Móvel Rápida
    // 
    // Didi rápida pra baixo. NAO COMPRA
-   if (FastDidi(idx) < MeanDidi(idx))
+   if (FastDD(idx) < MeanDD(idx))
       return 0;
    //
    ///////////////////////////////////////////////////////////////////      
@@ -438,11 +466,11 @@ int CSignalDiGui::LongCondition(void)
    // Existe AGULHADA?
    // 
    if (  // Agulhada no candle atual
-      (FastDidi(idx) > MeanDidi(idx) && FastDidi(idx) > SlowDidi(idx) &&
-      FastDidi(idx + 1) < MeanDidi(idx + 1) && FastDidi(idx + 1) < SlowDidi(idx + 1))
+      (FastDD(idx) > MeanDD(idx) && FastDD(idx) > SlowDD(idx) &&
+      FastDD(idx + 1) < MeanDD(idx + 1) && FastDD(idx + 1) < SlowDD(idx + 1))
       || // Agulhada no candle anterior
-      (FastDidi(idx + 1) > MeanDidi(idx + 1) && FastDidi(idx + 1) > SlowDidi(idx + 1) &&
-      FastDidi(idx + 2) < MeanDidi(idx + 2) && FastDidi(idx + 2) < SlowDidi(idx + 2))
+      (FastDD(idx + 1) > MeanDD(idx + 1) && FastDD(idx + 1) > SlowDD(idx + 1) &&
+      FastDD(idx + 2) < MeanDD(idx + 2) && FastDD(idx + 2) < SlowDD(idx + 2))
       )
    {
       signal = 50;
@@ -458,12 +486,12 @@ int CSignalDiGui::LongCondition(void)
    {
       //
       // Se a Didi rápida está apontando pra cima, adiciona 10 
-      if (FastDidi(i) > FastDidi(i + 1))
+      if (FastDD(i) > FastDD(i + 1))
          signal += 10;
 
       //
       // Se a Didi lenta está apontando pra baixo, adiciona 10 
-      if (SlowDidi(i) > SlowDidi(i + 1))
+      if (SlowDD(i) > SlowDD(i + 1))
          signal += 10;
 
       //
@@ -502,34 +530,13 @@ int CSignalDiGui::ShortCondition(void)
    int idx=StartIndex();
    int signal=0;
 
-   //if (MathAbs(FastDidi(idx) - MeanDidi(idx)) > 0.01)
+   //if (MathAbs(FastDD(idx) - MeanDD(idx)) > 0.01)
    //   return 0;
 
    ///////////////////////////////////////////////////////////////////
    // Existe AGULHADA?
    // 
-
-   // Agulhada 1 : Hoje todos iguais 
-   if (  // Agulhada no candle atual
-      (FastDidi(idx) == MeanDidi(idx) && FastDidi(idx) == SlowDidi(idx) 
-      //&&
-      //(FastDidi(idx + 1) > MeanDidi(idx + 1) || SlowDidi(idx + 1) < MeanDidi(idx + 1))
-      )
-      )
-   {
-      return 100;
-   }
-
-   return 0;
-
-    if (  // Agulhada no candle atual
-      (FastDidi(idx) <= MeanDidi(idx) && FastDidi(idx) <= SlowDidi(idx) &&
-      FastDidi(idx + 1) >= MeanDidi(idx + 1) && FastDidi(idx + 1) >= SlowDidi(idx + 1))
-      )
-   {
-      return 100;
-   }
-
+   return CheckAgulhadaSell(idx);
    //
    ///////////////////////////////////////////////////////////////////
 
@@ -552,7 +559,7 @@ int CSignalDiGui::ShortCondition(void)
    // Tratando Média Móvel Rápida
    // 
    // Didi rápida pra cima, NAO VENDE
-   if (FastDidi(idx) > MeanDidi(idx))
+   if (FastDD(idx) > MeanDD(idx))
       return 0;
    //
    ///////////////////////////////////////////////////////////////////      
@@ -562,11 +569,11 @@ int CSignalDiGui::ShortCondition(void)
    // Existe AGULHADA?
    // 
    if (  // Agulhada no candle atual
-      (FastDidi(idx) < MeanDidi(idx) && FastDidi(idx) < SlowDidi(idx) &&
-      FastDidi(idx + 1) > MeanDidi(idx + 1) && FastDidi(idx + 1) > SlowDidi(idx + 1))
+      (FastDD(idx) < MeanDD(idx) && FastDD(idx) < SlowDD(idx) &&
+      FastDD(idx + 1) > MeanDD(idx + 1) && FastDD(idx + 1) > SlowDD(idx + 1))
       // || // Agulhada no candle anterior
-      // (FastDidi(idx + 1) < MeanDidi(idx + 1) && FastDidi(idx + 1) < SlowDidi(idx + 1) &&
-      // FastDidi(idx + 2) > MeanDidi(idx + 2) && FastDidi(idx + 2) > SlowDidi(idx + 2))
+      // (FastDD(idx + 1) < MeanDD(idx + 1) && FastDD(idx + 1) < SlowDD(idx + 1) &&
+      // FastDD(idx + 2) > MeanDD(idx + 2) && FastDD(idx + 2) > SlowDD(idx + 2))
       )
    {
       signal = 50;
@@ -582,12 +589,12 @@ int CSignalDiGui::ShortCondition(void)
    {
       //
       // Se a Didi rápida está apontando pra baixo, adiciona 10 
-      if (FastDidi(i) < FastDidi(i + 1))
+      if (FastDD(i) < FastDD(i + 1))
          signal += 10;
 
       //
       // Se a Didi lenta está apontando pra ciDidi, adiciona 10 
-      if (SlowDidi(i) < SlowDidi(i + 1))
+      if (SlowDD(i) < SlowDD(i + 1))
          signal += 10;
 
       //
@@ -607,3 +614,56 @@ int CSignalDiGui::ShortCondition(void)
 
 }
 
+
+
+bool CSignalDiGui::CheckDDCrossFastMeanBuy(int idx) const
+{
+   return AreGEquals(FastDD(idx), MeanDD(idx)) && AreLEquals(FastDD(idx), MeanDD(idx));
+}
+
+
+bool CSignalDiGui::CheckDDCrossFastMeanSell(int idx) const
+{
+   return AreLEquals(FastDD(idx), MeanDD(idx)) && AreGEquals(FastDD(idx), MeanDD(idx));
+}
+
+
+
+bool CSignalDiGui::CheckDDCrossFastSlowBuy(int idx) const
+{
+   return AreGEquals(FastDD(idx), SlowDD(idx)) && AreLEquals(FastDD(idx), SlowDD(idx));
+}
+
+
+bool CSignalDiGui::CheckDDCrossFastSlowSell(int idx) const
+{
+   return AreLEquals(FastDD(idx), SlowDD(idx)) && AreGEquals(FastDD(idx), SlowDD(idx));
+}
+
+
+int CSignalDiGui::CheckAgulhadaBuy(int idx) const
+{
+   if ( 
+      AreEquals(FastDD(idx), MeanDD(idx)) && AreEquals(FastDD(idx), SlowDD(idx)) 
+      &&
+      (FastDD(idx + 1) < MeanDD(idx + 1) || SlowDD(idx + 1) > MeanDD(idx + 1))
+      )
+   {
+      return 100;
+   }
+   return 0;
+}
+
+
+int CSignalDiGui::CheckAgulhadaSell(int idx) const
+{
+   if ( 
+      AreEquals(FastDD(idx), MeanDD(idx)) && AreEquals(FastDD(idx), SlowDD(idx)) 
+      &&
+      (FastDD(idx + 1) > MeanDD(idx + 1) || SlowDD(idx + 1) < MeanDD(idx + 1))
+      )
+   {
+      return 100;
+   }
+   return 0;
+}

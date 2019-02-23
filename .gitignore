@@ -26,6 +26,7 @@ include/Expert/Money
 include/Expert/MySignals
 include/Expert/Triling
 include/Expert/*.mqh
+
 include/Expert/Signal/SignalA*
 include/Expert/Signal/SignalB*
 include/Expert/Signal/SignalC*
@@ -39,7 +40,12 @@ include/Expert/Signal/SignalR*
 include/Expert/Signal/SignalS*
 include/Expert/Signal/SignalT*
 include/Expert/Signal/SignalW*
-include/Expert/Trailing
+
+include/Expert/Trailing/TrailingFixedPips.mqh
+include/Expert/Trailing/TrailingMA.mqh
+include/Expert/Trailing/TrailingNone.mqh
+include/Expert/Trailing/TrailingParabolicSAR.mqh
+
 include/Files
 include/Generic
 include/Graphics
