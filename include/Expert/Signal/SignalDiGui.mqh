@@ -37,7 +37,7 @@ protected:
    CiMA          m_fast_ma;        // The indicator as an object
    CiMA          m_mean_ma;        // The indicator as an object
    CiMA          m_slow_ma;        // Slow MA indicator as an object
-   CiADX		     m_adx;			     // ADX indicator as an object
+   CiADXWilder   m_adx;			     // ADX indicator as an object
    
    //--- Configurable module parameters
    int               m_period_fast;    // Period of the fast MA
@@ -84,10 +84,19 @@ public:
    double            FastMA(const int index)             const { return(m_fast_ma.GetData(0,index)); }
    double            MeanMA(const int index)             const { return(m_mean_ma.GetData(0,index)); }
    double            SlowMA(const int index)             const { return(m_slow_ma.GetData(0,index)); }
+
+   double            FastDidi(const int index)             const { return(m_fast_ma.GetData(0,index) / m_mean_ma.GetData(0,index)); }
+   double            MeanDidi(const int index)             const { return(1.00); }
+   double            SlowDidi(const int index)             const { return(m_slow_ma.GetData(0,index) / m_mean_ma.GetData(0,index)); }
    
    double            ADXPlus(const int index)            const { return(m_adx.Plus(index)); }
    double            ADXMinus(const int index)           const { return(m_adx.Minus(index));}
    double            ADXMain(const int index)            const { return(m_adx.Main(index)); }
+
+   bool              HasPositionBuy();
+   bool              HasPositionSell();
+   
+   
 
 protected:
    //--- Creating MA indicators
@@ -96,7 +105,7 @@ protected:
    bool              CreateSlowMA(CIndicators *indicators);
    //--- Creating ADX indicators
    bool              CreateADX(CIndicators *indicators);
-  };
+};
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
@@ -109,21 +118,21 @@ CSignalDiGui::CSignalDiGui(void) :
                              m_method_slow(MODE_SMA),    // Default smoothing method of the slow MA
                              m_period_adx(8),			   // Default period of the ADX is 8
                              m_level_adx(32.0)
-  {
+{
 //--- initialization of protected data
    m_used_series=USE_SERIES_OPEN+USE_SERIES_HIGH+USE_SERIES_LOW+USE_SERIES_CLOSE;
-  }
+}
 //+------------------------------------------------------------------+
 //| Destructor                                                       |
 //+------------------------------------------------------------------+
 CSignalDiGui::~CSignalDiGui(void)
-  {
-  }
+{
+}
 //+------------------------------------------------------------------+
 //| Validation settings protected data.                              |
 //+------------------------------------------------------------------+
 bool CSignalDiGui::ValidationSettings(void)
-  {
+{
 //--- validation settings of additional filters
    if(!CExpertSignal::ValidationSettings())
       return(false);
@@ -167,14 +176,14 @@ bool CSignalDiGui::ValidationSettings(void)
      }
 //--- All checks are completed, everything is ok
    return true;
-  }
+}
 
 
 //+------------------------------------------------------------------+
 //| Create indicators.                                               |
 //+------------------------------------------------------------------+
 bool CSignalDiGui::InitIndicators(CIndicators *indicators)
-  {
+{
 //--- check pointer
    if(indicators==NULL)
       return(false);
@@ -187,7 +196,7 @@ bool CSignalDiGui::InitIndicators(CIndicators *indicators)
    if(!CreateADX(indicators))                  return(false);
 //--- Reached this part, so the function was successful, return true
    return(true);
-  }
+}
 
 
 
@@ -195,7 +204,7 @@ bool CSignalDiGui::InitIndicators(CIndicators *indicators)
 //| Creates the "Fast MA" indicator                                  |
 //+------------------------------------------------------------------+
 bool CSignalDiGui::CreateFastMA(CIndicators *indicators)
-  {
+{
 //--- Checking the pointer
    if(indicators==NULL) return(false);
 //--- Adding an object to the collection
@@ -212,7 +221,7 @@ bool CSignalDiGui::CreateFastMA(CIndicators *indicators)
      }
   
    return(true);
-  }
+}
 
 
 
@@ -220,7 +229,7 @@ bool CSignalDiGui::CreateFastMA(CIndicators *indicators)
 //| Creates the "Mean MA" indicator                                  |
 //+------------------------------------------------------------------+
 bool CSignalDiGui::CreateMeanMA(CIndicators *indicators)
-  {
+{
 //--- Checking the pointer
    if(indicators==NULL) return(false);
 //--- Adding an object to the collection
@@ -237,14 +246,14 @@ bool CSignalDiGui::CreateMeanMA(CIndicators *indicators)
      }
 //--- Reached this part, so the function was successful, return true
    return(true);
-  }
+}
 
 
 //+------------------------------------------------------------------+
 //| Creates the "Slow MA" indicator                                  |
 //+------------------------------------------------------------------+
 bool CSignalDiGui::CreateSlowMA(CIndicators *indicators)
-  {
+{
 //--- Checking the pointer
    if(indicators==NULL) return(false);
 //--- Adding an object to the collection
@@ -262,14 +271,14 @@ bool CSignalDiGui::CreateSlowMA(CIndicators *indicators)
 
 //--- Reached this part, so the function was successful, return true
    return(true);
-  }
+}
 
 
 //+------------------------------------------------------------------+
 //| Creates the ADX indicator                                  |
 //+------------------------------------------------------------------+
 bool CSignalDiGui::CreateADX(CIndicators *indicators)
-  {
+{
 //--- Checking the pointer
    if(indicators==NULL) return(false);
 //--- Adding an object to the collection
@@ -287,118 +296,314 @@ bool CSignalDiGui::CreateADX(CIndicators *indicators)
 
 //--- Reached this part, so the function was successful, return true
    return(true);
-  }
+}
+
+
+void GetPositionProperties()
+{
+//--- variables for returning values from position properties
+
+   double   open_price;
+   double   initial_volume;
+   long     positionID;
+   double   position_profit;
+
+   ENUM_POSITION_TYPE      type;
+
+//--- number of current positions
+
+   uint     total=PositionsTotal();
+//--- go through orders in a loop
+   for(uint i=0;i<total;i++)
+   {
+      //--- return order ticket by its position in the list
+          {
+         //--- return order properties
+         open_price    =PositionGetDouble(POSITION_PRICE_OPEN);
+         positionID    =PositionGetInteger(POSITION_IDENTIFIER);
+         initial_volume=PositionGetDouble(POSITION_VOLUME);
+         position_profit=PositionGetDouble(POSITION_PROFIT);
+         
+         type          =(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+         Alert(EnumToString(type));  
+        }
+   }
+}
+
+
+//+------------------------------------------------------------------+
+//| Verifica se há COMPRA aberta                                     |
+//+------------------------------------------------------------------+
+
+bool CSignalDiGui::HasPositionBuy() 
+{
+   for (int i = 0; i < PositionsTotal(); ++i)
+   {
+      if(PositionSelect(m_symbol.Name()) == true &&
+         PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
+            return true;        
+   }
+   return false;
+}
+
+
+//+------------------------------------------------------------------+
+//| Verifica se há VENDA aberta                                      |
+//+------------------------------------------------------------------+
+bool CSignalDiGui::HasPositionSell() 
+{
+   for (int i = 0; i < PositionsTotal(); ++i)
+   {
+      if(PositionSelect(m_symbol.Name()) == true &&
+         PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
+            return true;        
+   }
+   return false;
+}
 
 
 
 //+------------------------------------------------------------------+
-//| "Voting" that price will grow.                                   |
+//| Calculando se há sinal de COMPRA                                 |
 //+------------------------------------------------------------------+
 int CSignalDiGui::LongCondition(void)
 {
-   int signal=0;
+   ////////////////////// NÃO COMPRA /////////////////////////////////
+   //
+   // Se existe posição comprada, NÂO COMPRA MAIS NADA
+   // 
+   if (HasPositionBuy())
+      return 0;
+   //
+   ///////////////////////////////////////////////////////////////////
+
+
+   
    //--- For operation with ticks idx=0, for operation with formed bars idx=1
    int idx=StartIndex();
-   //--- Values of MAs at the last formed bar
-   double last_fast_value=FastMA(idx);
-   double last_mean_value=MeanMA(idx);
-   double last_slow_value=SlowMA(idx);
-   //--- Values of MAs at the last but one formed bar
-   double prev_fast_value=FastMA(idx+1);
-   double prev_mean_value=MeanMA(idx+1);
-   double prev_slow_value=SlowMA(idx+1);
+   int signal=0;
 
-   if (FastMA(idx) < MeanMA(idx))
-      return 0;
-      
-   if (!(ADXMain(idx) > ADXMain(idx + 1) && ADXMain(idx + 1) > ADXMain(idx + 2)))
-      return 0;
-      
-   if (!(FastMA(idx) > FastMA(idx + 1) && FastMA(idx + 1) > FastMA(idx + 2)))
-      return 0;
+   //  if (MathAbs(FastDidi(idx) - MeanDidi(idx)) > 0.01)
+   //     return 0;
+   
+   return 0;
 
-   // agulhada
-   if (FastMA(idx) > MeanMA(idx) && SlowMA(idx) < MeanMA(idx)
-      && FastMA(idx + 2) < MeanMA(idx + 2) && SlowMA(idx + 2) > MeanMA(idx + 2))
+
+   if (  // Agulhada no candle atual
+      (FastDidi(idx) >= MeanDidi(idx) && FastDidi(idx) >= SlowDidi(idx) &&
+      FastDidi(idx + 1) <= MeanDidi(idx + 1) && FastDidi(idx + 1) <= SlowDidi(idx + 1))
+      )
    {
       return 100;
    }
 
-   for (int i = idx; i< (idx + m_period_fast); ++i)
+
+
+   return 0;
+
+
+   ////////////////////// NÃO COMPRA /////////////////////////////////
+   // Tratando o ADX 
+   // 
+   // Se o ADX estiver apontando pra baixo, 
+   if (ADXMain(idx) < ADXMain(idx + 1))
+      return 0;
+   //
+   // Se o ADX estiver abaixo do nível
+   // E se DI+ não estiver apontando pra cima
+   // E se ADX não estiver apontando pra cima
+   if (ADXMain(idx) < m_level_adx)
    {
-      if (FastMA(idx) < FastMA(idx + 1))
+      if (ADXPlus(idx) <= ADXPlus(idx + 1))
          return 0;
-         
-//      if (SlowMA(idx) > SlowMA(idx + 1))
-//         return 0;
-         
-      // ADX Cross
-      //if ( ADXMinus(i) > ADXPlus(i) && ADXMinus(i + 1) < ADXPlus(i + 1) )
-      
-      if (ADXMain(i) > m_level_adx)
-         signal += 10;
-     
+
+      if (ADXMain(idx) <= ADXMain(idx + 1))
+         return 0;
    }
+   //
+   ///////////////////////////////////////////////////////////////////
+      
+
+   ///////////////////////////////////////////////////////////////////
+   // Tratando Média Móvel Rápida
+   // 
+   // Didi rápida pra baixo. NAO COMPRA
+   if (FastDidi(idx) < MeanDidi(idx))
+      return 0;
+   //
+   ///////////////////////////////////////////////////////////////////      
      
-      //--- Return the signal value
-      if (PositionsTotal() == 0)
-         return MathMax(0, signal);
-      else
-         return 0;
+
+   ///////////////////////////////////////////////////////////////////
+   // Existe AGULHADA?
+   // 
+   if (  // Agulhada no candle atual
+      (FastDidi(idx) > MeanDidi(idx) && FastDidi(idx) > SlowDidi(idx) &&
+      FastDidi(idx + 1) < MeanDidi(idx + 1) && FastDidi(idx + 1) < SlowDidi(idx + 1))
+      || // Agulhada no candle anterior
+      (FastDidi(idx + 1) > MeanDidi(idx + 1) && FastDidi(idx + 1) > SlowDidi(idx + 1) &&
+      FastDidi(idx + 2) < MeanDidi(idx + 2) && FastDidi(idx + 2) < SlowDidi(idx + 2))
+      )
+   {
+      signal = 50;
+   }
+   //
+   ///////////////////////////////////////////////////////////////////
+
+
+   ///////////////////////////////////////////////////////////////////
+   // Compondo o valor de força do sinal de compra
+   //
+   for (int i = idx; i < (idx + m_period_fast - 1); ++i)
+   {
+      //
+      // Se a Didi rápida está apontando pra cima, adiciona 10 
+      if (FastDidi(i) > FastDidi(i + 1))
+         signal += 10;
+
+      //
+      // Se a Didi lenta está apontando pra baixo, adiciona 10 
+      if (SlowDidi(i) > SlowDidi(i + 1))
+         signal += 10;
+
+      //
+      // Se ADX está apontando pra cima, adiciona 10 
+      if (ADXMain(i) > ADXMain(i + 1))
+         signal += 10;
+
+      //
+      // Se DI+ está acima do DI-, adiciona 10
+      if (ADXPlus(i) > ADXMinus(i))
+         signal += 10;
+   }
+
+   //     
+   // Retorna a força do sinal entre 0 e 100 
+   return MathMax(0, MathMin(100, signal));
 }
 
 
 //+------------------------------------------------------------------+
-//| "Voting" that price will fall.                                   |
+//| Calculando se há sinal de VENDA                                  |
 //+------------------------------------------------------------------+
 int CSignalDiGui::ShortCondition(void)
 {
-   return 0;
+   ///////////////////////////////////////////////////////////////////
+   //
+   // Se existe posição vendida, NÂO VENDE MAIS NADA
+   // 
+   if (HasPositionSell())
+      return 0;
+   // 
+   ///////////////////////////////////////////////////////////////////
    
-   int signal=0;
+  
    //--- For operation with ticks idx=0, for operation with formed bars idx=1
    int idx=StartIndex();
-   //--- Values of MAs at the last formed bar
-   double last_fast_value=FastMA(idx);
-   double last_mean_value=SlowMA(idx);
-   double last_slow_value=SlowMA(idx);
-   //--- Values of MAs at the last but one formed bar
-   double prev_fast_value=FastMA(idx+1);
-   double prev_mean_value=FastMA(idx+1);
-   double prev_slow_value=SlowMA(idx+1);
-   
-   if (FastMA(idx) > MeanMA(idx))
-      return 0;
+   int signal=0;
 
-   // agulhada
-   if (FastMA(idx) < MeanMA(idx) && SlowMA(idx) > MeanMA(idx)
-      && FastMA(idx + 2) > MeanMA(idx + 2) && SlowMA(idx + 2) < MeanMA(idx + 2))
+   //if (MathAbs(FastDidi(idx) - MeanDidi(idx)) > 0.01)
+   //   return 0;
+
+   ///////////////////////////////////////////////////////////////////
+   // Existe AGULHADA?
+   // 
+
+   // Agulhada 1 : Hoje todos iguais 
+   if (  // Agulhada no candle atual
+      (FastDidi(idx) == MeanDidi(idx) && FastDidi(idx) == SlowDidi(idx) 
+      //&&
+      //(FastDidi(idx + 1) > MeanDidi(idx + 1) || SlowDidi(idx + 1) < MeanDidi(idx + 1))
+      )
+      )
    {
       return 100;
    }
 
-   for (int i = idx; i< (idx + m_period_fast); ++i)
+   return 0;
+
+    if (  // Agulhada no candle atual
+      (FastDidi(idx) <= MeanDidi(idx) && FastDidi(idx) <= SlowDidi(idx) &&
+      FastDidi(idx + 1) >= MeanDidi(idx + 1) && FastDidi(idx + 1) >= SlowDidi(idx + 1))
+      )
    {
-      if (FastMA(idx) < FastMA(idx + 1))
-         return 0;
-         
-      // ADX Cross
-      //if ( ADXMinus(i) > ADXPlus(i) && ADXMinus(i + 1) < ADXPlus(i + 1) )
-      
-      if (ADXMain(i) > m_level_adx)
-         signal += 10;
-        
-      
+      return 100;
    }
 
-      //--- Return the signal value
-      if (PositionsTotal() == 0)
-         return MathMax(0, signal);
-      else
-         return 0;
+   //
+   ///////////////////////////////////////////////////////////////////
+
+   return 0;
+
+   ///////////////////////////////////////////////////////////////////
+   // Tratando o ADX
+   // 
+   // Se o ADX estiver apontando pra cima, NÃO VENDE
+   if (ADXMain(idx) > ADXMain(idx + 1))
+      return 0;
+   //
+   // Se o ADX estiver abaixo do nível, NÃO VENDE
+   if (ADXMain(idx) < m_level_adx)
+      return 0;
+   //
+   ///////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////
+   // Tratando Média Móvel Rápida
+   // 
+   // Didi rápida pra cima, NAO VENDE
+   if (FastDidi(idx) > MeanDidi(idx))
+      return 0;
+   //
+   ///////////////////////////////////////////////////////////////////      
+     
+
+   ///////////////////////////////////////////////////////////////////
+   // Existe AGULHADA?
+   // 
+   if (  // Agulhada no candle atual
+      (FastDidi(idx) < MeanDidi(idx) && FastDidi(idx) < SlowDidi(idx) &&
+      FastDidi(idx + 1) > MeanDidi(idx + 1) && FastDidi(idx + 1) > SlowDidi(idx + 1))
+      // || // Agulhada no candle anterior
+      // (FastDidi(idx + 1) < MeanDidi(idx + 1) && FastDidi(idx + 1) < SlowDidi(idx + 1) &&
+      // FastDidi(idx + 2) > MeanDidi(idx + 2) && FastDidi(idx + 2) > SlowDidi(idx + 2))
+      )
+   {
+      signal = 50;
+   }
+   //
+   ///////////////////////////////////////////////////////////////////
+
+
+   ///////////////////////////////////////////////////////////////////
+   // Compondo o valor de força do sinal de venda
+   //
+   for (int i = idx; i < (idx + m_period_fast - 1); ++i)
+   {
+      //
+      // Se a Didi rápida está apontando pra baixo, adiciona 10 
+      if (FastDidi(i) < FastDidi(i + 1))
+         signal += 10;
+
+      //
+      // Se a Didi lenta está apontando pra ciDidi, adiciona 10 
+      if (SlowDidi(i) < SlowDidi(i + 1))
+         signal += 10;
+
+      //
+      // Se ADX está apontando pra cima, adiciona 10 
+      if (ADXMain(i) < ADXMain(i + 1))
+         signal += 10;
+
+      //
+      // Se DI- está acima do DI+, adiciona 10
+      if (ADXMinus(i) > ADXPlus(i))
+         signal += 10;
+   }
+
+   //     
+   // Retorna a força do sinal entre 0 e 100 
+   return MathMax(0, MathMin(100, signal));
+
 }
-
-
-
-//+------------------------------------------------------------------+
 
