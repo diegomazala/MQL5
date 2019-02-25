@@ -115,13 +115,17 @@ protected:
    //--- Creating ADX indicators
    bool              CreateADX(CIndicators *indicators);
    
-   int               CheckAgulhadaBuy(int idx) const;
-   int               CheckAgulhadaSell(int idx) const;
+   int               CheckAgulhadaBuyNotConfirmed(int idx) const;
+   int               CheckAgulhadaBuyConfirmed(int idx) const;
+   int               CheckAgulhadaSellNotConfirmed(int idx) const;
+   int               CheckAgulhadaSellConfirmed(int idx) const;
    bool              CheckDDCrossFastMeanBuy(int idx) const;
    bool              CheckDDCrossFastMeanSell(int idx) const;
    bool              CheckDDCrossFastSlowBuy(int idx) const;
    bool              CheckDDCrossFastSlowSell(int idx) const;
-
+   
+   bool              CanBuy(int idx) const;
+   bool              CanSell(int idx) const;
 };
 
 
@@ -416,94 +420,56 @@ int CSignalDiGui::LongCondition(void)
    int idx=StartIndex();
    int signal=0;
 
-   //  if (MathAbs(FastDD(idx) - MeanDD(idx)) > 0.01)
-   //     return 0;
+
+   ///////////////////////////////////////////////////////////////////
+   //
+   // Verifica se os indicadores não permitem venda
+   // 
+   //if(!CanBuy(idx))
+   //   return 0;
+   // 
+   ///////////////////////////////////////////////////////////////////
+   
+   
    
    ///////////////////////////////////////////////////////////////////
    // Existe AGULHADA?
    // 
-   return CheckAgulhadaBuy(idx);
+   signal += CheckAgulhadaBuyNotConfirmed(idx);
+   signal += CheckAgulhadaBuyConfirmed(idx);
    //
    ///////////////////////////////////////////////////////////////////
 
 
-   return 0;
-
-
-   ////////////////////// NÃO COMPRA /////////////////////////////////
-   // Tratando o ADX 
-   // 
-   // Se o ADX estiver apontando pra baixo, 
-   if (ADXMain(idx) < ADXMain(idx + 1))
-      return 0;
-   //
-   // Se o ADX estiver abaixo do nível
-   // E se DI+ não estiver apontando pra cima
-   // E se ADX não estiver apontando pra cima
-   if (ADXMain(idx) < m_level_adx)
-   {
-      if (ADXPlus(idx) <= ADXPlus(idx + 1))
-         return 0;
-
-      if (ADXMain(idx) <= ADXMain(idx + 1))
-         return 0;
-   }
-   //
-   ///////////////////////////////////////////////////////////////////
-      
 
    ///////////////////////////////////////////////////////////////////
    // Tratando Média Móvel Rápida
    // 
-   // Didi rápida pra baixo. NAO COMPRA
-   if (FastDD(idx) < MeanDD(idx))
-      return 0;
-   //
-   ///////////////////////////////////////////////////////////////////      
-     
-
-   ///////////////////////////////////////////////////////////////////
-   // Existe AGULHADA?
+   // FastDidi cruzou Mean pra baixo, +10
+   signal += CheckDDCrossFastMeanBuy(idx) ? 10 : 0;
+   signal += CheckDDCrossFastMeanBuy(idx + 1) ? 10 : 0;
    // 
-   if (  // Agulhada no candle atual
-      (FastDD(idx) > MeanDD(idx) && FastDD(idx) > SlowDD(idx) &&
-      FastDD(idx + 1) < MeanDD(idx + 1) && FastDD(idx + 1) < SlowDD(idx + 1))
-      || // Agulhada no candle anterior
-      (FastDD(idx + 1) > MeanDD(idx + 1) && FastDD(idx + 1) > SlowDD(idx + 1) &&
-      FastDD(idx + 2) < MeanDD(idx + 2) && FastDD(idx + 2) < SlowDD(idx + 2))
-      )
-   {
-      signal = 50;
-   }
+   // FastDidi cruzou pra Slow baixo, +10
+   signal += CheckDDCrossFastSlowBuy(idx) ? 10 : 0;
+   signal += CheckDDCrossFastSlowBuy(idx + 1) ? 10 : 0;
    //
-   ///////////////////////////////////////////////////////////////////
-
+   // FastDidi acima da MeanDidi e apotando pra cima
+   signal += (FastDD(idx) > MeanDD(idx) && FastDD(idx) > FastDD(idx + 1)) ? 10 : 0;
+   ///////////////////////////////////////////////////////////////////      
+    
 
    ///////////////////////////////////////////////////////////////////
-   // Compondo o valor de força do sinal de compra
+   // Tratando o ADX
+   // 
+   // ADX apontando pra cima, +10
+   signal += (ADXMain(idx) > ADXMain(idx + 1)) ? 10 : 0;
    //
-   for (int i = idx; i < (idx + m_period_fast - 1); ++i)
-   {
-      //
-      // Se a Didi rápida está apontando pra cima, adiciona 10 
-      if (FastDD(i) > FastDD(i + 1))
-         signal += 10;
-
-      //
-      // Se a Didi lenta está apontando pra baixo, adiciona 10 
-      if (SlowDD(i) > SlowDD(i + 1))
-         signal += 10;
-
-      //
-      // Se ADX está apontando pra cima, adiciona 10 
-      if (ADXMain(i) > ADXMain(i + 1))
-         signal += 10;
-
-      //
-      // Se DI+ está acima do DI-, adiciona 10
-      if (ADXPlus(i) > ADXMinus(i))
-         signal += 10;
-   }
+   // ADX acima do nível, +10
+   signal += (ADXMain(idx) > m_level_adx) ? 10 : 0;
+   //
+   // Se DI+ está acima do DI-, adiciona 10
+   signal += (ADXPlus(idx) > ADXMinus(idx)) ? 20 : 0;
+   ///////////////////////////////////////////////////////////////////
 
    //     
    // Retorna a força do sinal entre 0 e 100 
@@ -530,83 +496,55 @@ int CSignalDiGui::ShortCondition(void)
    int idx=StartIndex();
    int signal=0;
 
-   //if (MathAbs(FastDD(idx) - MeanDD(idx)) > 0.01)
+
+   ///////////////////////////////////////////////////////////////////
+   //
+   // Verifica se os indicadores não permitem venda
+   // 
+   //if(!CanSell(idx))
    //   return 0;
+   // 
+   ///////////////////////////////////////////////////////////////////
 
    ///////////////////////////////////////////////////////////////////
    // Existe AGULHADA?
    // 
-   return CheckAgulhadaSell(idx);
+   signal += CheckAgulhadaSellNotConfirmed(idx);
+   signal += CheckAgulhadaSellConfirmed(idx);
    //
    ///////////////////////////////////////////////////////////////////
 
-   return 0;
 
+
+   ///////////////////////////////////////////////////////////////////
+   // Tratando Média Móvel Rápida
+   // 
+   // FastDidi cruzou Mean pra baixo, +10
+   signal += CheckDDCrossFastMeanSell(idx) ? 10 : 0;
+   signal += CheckDDCrossFastMeanSell(idx + 1) ? 10 : 0;
+   // 
+   // FastDidi cruzou pra Slow baixo, +10
+   signal += CheckDDCrossFastSlowSell(idx) ? 10 : 0;
+   signal += CheckDDCrossFastSlowSell(idx + 1) ? 10 : 0;
+   //
+   // FastDidi abaixo da MeanDidi e apotando pra baixo
+   signal += (FastDD(idx) < MeanDD(idx) && FastDD(idx) < FastDD(idx + 1)) ? 10 : 0;
+   ///////////////////////////////////////////////////////////////////      
+    
+    
+    
    ///////////////////////////////////////////////////////////////////
    // Tratando o ADX
    // 
-   // Se o ADX estiver apontando pra cima, NÃO VENDE
-   if (ADXMain(idx) > ADXMain(idx + 1))
-      return 0;
+   // ADX apontando pra cima, +10
+   signal += (ADXMain(idx) > ADXMain(idx + 1)) ? 10 : 0;
    //
-   // Se o ADX estiver abaixo do nível, NÃO VENDE
-   if (ADXMain(idx) < m_level_adx)
-      return 0;
+   // ADX acima do nível, +10
+   signal += (ADXMain(idx) > m_level_adx) ? 20 : 0;
    //
+   // Se DI- está acima do DI+, adiciona 10
+   signal += (ADXMinus(idx) > ADXPlus(idx)) ? 20 : 0;
    ///////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////
-   // Tratando Média Móvel Rápida
-   // 
-   // Didi rápida pra cima, NAO VENDE
-   if (FastDD(idx) > MeanDD(idx))
-      return 0;
-   //
-   ///////////////////////////////////////////////////////////////////      
-     
-
-   ///////////////////////////////////////////////////////////////////
-   // Existe AGULHADA?
-   // 
-   if (  // Agulhada no candle atual
-      (FastDD(idx) < MeanDD(idx) && FastDD(idx) < SlowDD(idx) &&
-      FastDD(idx + 1) > MeanDD(idx + 1) && FastDD(idx + 1) > SlowDD(idx + 1))
-      // || // Agulhada no candle anterior
-      // (FastDD(idx + 1) < MeanDD(idx + 1) && FastDD(idx + 1) < SlowDD(idx + 1) &&
-      // FastDD(idx + 2) > MeanDD(idx + 2) && FastDD(idx + 2) > SlowDD(idx + 2))
-      )
-   {
-      signal = 50;
-   }
-   //
-   ///////////////////////////////////////////////////////////////////
-
-
-   ///////////////////////////////////////////////////////////////////
-   // Compondo o valor de força do sinal de venda
-   //
-   for (int i = idx; i < (idx + m_period_fast - 1); ++i)
-   {
-      //
-      // Se a Didi rápida está apontando pra baixo, adiciona 10 
-      if (FastDD(i) < FastDD(i + 1))
-         signal += 10;
-
-      //
-      // Se a Didi lenta está apontando pra ciDidi, adiciona 10 
-      if (SlowDD(i) < SlowDD(i + 1))
-         signal += 10;
-
-      //
-      // Se ADX está apontando pra cima, adiciona 10 
-      if (ADXMain(i) < ADXMain(i + 1))
-         signal += 10;
-
-      //
-      // Se DI- está acima do DI+, adiciona 10
-      if (ADXMinus(i) > ADXPlus(i))
-         signal += 10;
-   }
 
    //     
    // Retorna a força do sinal entre 0 e 100 
@@ -614,6 +552,25 @@ int CSignalDiGui::ShortCondition(void)
 
 }
 
+bool CSignalDiGui::CanBuy(int idx) const
+{
+   // TODO: Verificar horário de operação
+
+   return ADXPlus(idx) > ADXMinus(idx)
+      && ADXMain(idx) > m_level_adx
+      //&& AreGEquals(ADXMain(idx), ADXMain(idx + 1))
+      && AreGEquals(FastDD(idx), MeanDD(idx))
+      && MathAbs(FastDD(idx) - MeanDD(idx)) < m_dd_offset;
+}
+
+bool CSignalDiGui::CanSell(int idx) const
+{
+   return ADXMinus(idx) > ADXPlus(idx)
+      && ADXMain(idx) > m_level_adx
+      //&& AreGEquals(ADXMain(idx), ADXMain(idx + 1))
+      && AreLEquals(FastDD(idx), MeanDD(idx))
+      && MathAbs(FastDD(idx) - MeanDD(idx)) < m_dd_offset;
+}
 
 
 bool CSignalDiGui::CheckDDCrossFastMeanBuy(int idx) const
@@ -641,7 +598,10 @@ bool CSignalDiGui::CheckDDCrossFastSlowSell(int idx) const
 }
 
 
-int CSignalDiGui::CheckAgulhadaBuy(int idx) const
+// Verifica se os indicadores estão no mesmo nível no candle atual
+// e se no candle anterior estava indicando a direção de uma agulhada
+// NOTE: Não espera a confirmação do cruzamento para indicar agulhada
+int CSignalDiGui::CheckAgulhadaBuyNotConfirmed(int idx) const
 {
    if ( 
       AreEquals(FastDD(idx), MeanDD(idx)) && AreEquals(FastDD(idx), SlowDD(idx)) 
@@ -649,21 +609,70 @@ int CSignalDiGui::CheckAgulhadaBuy(int idx) const
       (FastDD(idx + 1) < MeanDD(idx + 1) || SlowDD(idx + 1) > MeanDD(idx + 1))
       )
    {
-      return 100;
+      return 30;
    }
    return 0;
 }
 
 
-int CSignalDiGui::CheckAgulhadaSell(int idx) const
+// Verifica se os indicadores estão no mesmo nível no candle anterior
+// e se no candle pre-anterior estava indicando a direção de uma agulhada
+// No candle atual, os indicadores se cruzaram confirmando a agulhada
+int CSignalDiGui::CheckAgulhadaBuyConfirmed(int idx) const
 {
+   if ( 
+      AreGEquals(FastDD(idx), MeanDD(idx)) && AreLEquals(SlowDD(idx), MeanDD(idx))
+      &&
+      AreEquals(FastDD(idx + 1), MeanDD(idx + 1)) && AreEquals(FastDD(idx + 1), SlowDD(idx + 1)) 
+      &&
+      (FastDD(idx + 2) < MeanDD(idx + 2) || SlowDD(idx + 2) > MeanDD(idx + 2))
+      )
+   {
+      return 50;
+   }
+   return 0;
+}
+
+
+// Verifica se os indicadores estão no mesmo nível no candle atual
+// e se no candle anterior estava indicando a direção de uma agulhada
+// NOTE: Não espera a confirmação do cruzamento para indicar agulhada
+int CSignalDiGui::CheckAgulhadaSellNotConfirmed(int idx) const
+{
+
    if ( 
       AreEquals(FastDD(idx), MeanDD(idx)) && AreEquals(FastDD(idx), SlowDD(idx)) 
       &&
       (FastDD(idx + 1) > MeanDD(idx + 1) || SlowDD(idx + 1) < MeanDD(idx + 1))
       )
    {
-      return 100;
+      return 30;
    }
+   
+   
    return 0;
 }
+
+
+// Verifica se os indicadores estão no mesmo nível no candle anterior
+// e se no candle pre-anterior estava indicando a direção de uma agulhada
+// No candle atual, os indicadores se cruzaram confirmando a agulhada
+int CSignalDiGui::CheckAgulhadaSellConfirmed(int idx) const
+{
+   
+   if ( 
+      AreLEquals(FastDD(idx), MeanDD(idx)) && AreGEquals(SlowDD(idx), MeanDD(idx))
+      &&
+      AreEquals(FastDD(idx + 1), MeanDD(idx + 1)) && AreEquals(FastDD(idx + 1), SlowDD(idx + 1)) 
+      &&
+      (FastDD(idx + 2) > MeanDD(idx + 2) || SlowDD(idx + 2) < MeanDD(idx + 2))
+      )
+   {
+      return 50;
+   }
+   
+   
+   return 0;
+}
+
+
