@@ -39,6 +39,8 @@ protected:
 
    int               m_period_adx;     // Period of the ADX
    double            m_level_adx;      // Level of thee ADX
+   
+   double            m_dd_epsilon;     // Max distance between cross lines
 
 public:
                      CTrailingDiGui(void);
@@ -73,6 +75,9 @@ public:
    double            ADXMinus(const int index)           const { return(m_adx.Minus(index));}
    double            ADXMain(const int index)            const { return(m_adx.Main(index)); }
    
+   double            EpsilonDD(const double value)       const { return m_dd_epsilon; }
+
+   
    //---
    virtual bool      CheckTrailingStopLong(CPositionInfo *position,double &sl,double &tp);
    virtual bool      CheckTrailingStopShort(CPositionInfo *position,double &sl,double &tp);
@@ -85,7 +90,40 @@ protected:
    bool              CreateSlowMA(CIndicators *indicators);
    //--- Creating ADX indicators
    bool              CreateADX(CIndicators *indicators);
-  };
+   
+   
+   
+   
+   bool CheckDDCrossFastMeanBuy(int idx) const
+   {
+      return AreGEquals(FastDD(idx), MeanDD(idx)) && AreLEquals(FastDD(idx), MeanDD(idx));
+   }
+
+
+   bool CheckDDCrossFastMeanSell(int idx) const
+   {
+      return AreLEquals(FastDD(idx), MeanDD(idx)) && AreGEquals(FastDD(idx), MeanDD(idx));
+   }
+   
+   
+   bool AreEquals(double a, double b) const 
+   {
+       return MathAbs(a - b) < m_dd_epsilon;
+   }
+   bool AreLEquals(double a, double b) const
+   {
+       return (a < b) && AreEquals(a, b);
+   }
+   bool AreGEquals(double a, double b) const
+   {
+       return (a > b) && AreEquals(a, b);
+   }  
+};
+
+
+  
+  
+  
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
@@ -308,3 +346,5 @@ bool CTrailingDiGui::CheckTrailingStopShort(CPositionInfo *position,double &sl,d
    return(sl!=EMPTY_VALUE);
 }
 //+------------------------------------------------------------------+
+
+

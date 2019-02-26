@@ -115,32 +115,77 @@ protected:
    //--- Creating ADX indicators
    bool              CreateADX(CIndicators *indicators);
    
-   int               CheckAgulhadaBuyNotConfirmed(int idx) const;
-   int               CheckAgulhadaBuyConfirmed(int idx) const;
-   int               CheckAgulhadaSellNotConfirmed(int idx) const;
-   int               CheckAgulhadaSellConfirmed(int idx) const;
-   bool              CheckDDCrossFastMeanBuy(int idx) const;
-   bool              CheckDDCrossFastMeanSell(int idx) const;
-   bool              CheckDDCrossFastSlowBuy(int idx) const;
-   bool              CheckDDCrossFastSlowSell(int idx) const;
+   int               CheckAgulhadaBuy(int idx) const;
+   int               CheckAgulhadaSell(int idx) const;
    
    bool              CanBuy(int idx) const;
    bool              CanSell(int idx) const;
+   
+      
+   
+   bool CheckDDCrossFastMeanBuy(int idx) const
+   {
+      return AreGEquals(FastDD(idx), MeanDD(idx)) && AreLEquals(FastDD(idx), MeanDD(idx));
+   }
+   
+   
+   bool CheckDDCrossFastMeanSell(int idx) const
+   {
+      return AreLEquals(FastDD(idx), MeanDD(idx)) && AreGEquals(FastDD(idx), MeanDD(idx));
+   }
+   
+   
+   bool CheckDDCrossFastSlowBuy(int idx) const
+   {
+      return AreGEquals(FastDD(idx), SlowDD(idx)) && AreLEquals(FastDD(idx), SlowDD(idx));
+   }
+   
+   
+   bool CheckDDCrossFastSlowSell(int idx) const
+   {
+      return AreLEquals(FastDD(idx), SlowDD(idx)) && AreGEquals(FastDD(idx), SlowDD(idx));
+   }
+   
+   bool CheckMACrossFastMeanBuy(int idx) const
+   {
+      return AreGEquals(FastMA(idx), MeanMA(idx)) && AreLEquals(FastMA(idx), MeanMA(idx));
+   }
+   
+   
+   bool CheckMACrossFastMeanSell(int idx) const
+   {
+      return AreLEquals(FastMA(idx), MeanMA(idx)) && AreGEquals(FastMA(idx), MeanMA(idx));
+   }
+   
+   
+   bool CheckMACrossFastSlowBuy(int idx) const
+   {
+      return AreGEquals(FastMA(idx), SlowMA(idx)) && AreLEquals(FastMA(idx), SlowMA(idx));
+   }
+   
+   
+   bool CheckMACrossFastSlowSell(int idx) const
+   {
+      return AreLEquals(FastMA(idx), SlowMA(idx)) && AreGEquals(FastMA(idx), SlowMA(idx));
+   }
+
+   
+   bool AreEquals(double a, double b) const 
+   {
+       return MathAbs(a - b) < m_dd_epsilon;
+   }
+   bool AreLEquals(double a, double b) const
+   {
+       return (a < b) && AreEquals(a, b);
+   }
+   bool AreGEquals(double a, double b) const
+   {
+       return (a > b) && AreEquals(a, b);
+   }  
+   
 };
 
 
-bool AreEquals(double a, double b, double epsilon = 0.001)
-{
-    return MathAbs(a - b) < epsilon;
-}
-bool AreLEquals(double a, double b, double epsilon = 0.001)
-{
-    return (a < b) && AreEquals(a, b, epsilon);
-}
-bool AreGEquals(double a, double b, double epsilon = 0.001)
-{
-    return (a > b) && AreEquals(a, b, epsilon);
-}
 
 
 //+------------------------------------------------------------------+
@@ -435,13 +480,12 @@ int CSignalDiGui::LongCondition(void)
    ///////////////////////////////////////////////////////////////////
    // Existe AGULHADA?
    // 
-   signal += CheckAgulhadaBuyNotConfirmed(idx);
-   signal += CheckAgulhadaBuyConfirmed(idx);
+   signal += CheckAgulhadaBuy(idx);
    //
    ///////////////////////////////////////////////////////////////////
 
 
-
+/*
    ///////////////////////////////////////////////////////////////////
    // Tratando Média Móvel Rápida
    // 
@@ -470,7 +514,7 @@ int CSignalDiGui::LongCondition(void)
    // Se DI+ está acima do DI-, adiciona 10
    signal += (ADXPlus(idx) > ADXMinus(idx)) ? 20 : 0;
    ///////////////////////////////////////////////////////////////////
-
+*/
    //     
    // Retorna a força do sinal entre 0 e 100 
    return MathMax(0, MathMin(100, signal));
@@ -509,13 +553,12 @@ int CSignalDiGui::ShortCondition(void)
    ///////////////////////////////////////////////////////////////////
    // Existe AGULHADA?
    // 
-   signal += CheckAgulhadaSellNotConfirmed(idx);
-   signal += CheckAgulhadaSellConfirmed(idx);
+   signal += CheckAgulhadaSell(idx);
    //
    ///////////////////////////////////////////////////////////////////
 
 
-
+/*
    ///////////////////////////////////////////////////////////////////
    // Tratando Média Móvel Rápida
    // 
@@ -545,7 +588,7 @@ int CSignalDiGui::ShortCondition(void)
    // Se DI- está acima do DI+, adiciona 10
    signal += (ADXMinus(idx) > ADXPlus(idx)) ? 20 : 0;
    ///////////////////////////////////////////////////////////////////
-
+*/
    //     
    // Retorna a força do sinal entre 0 e 100 
    return MathMax(0, MathMin(100, signal));
@@ -573,40 +616,13 @@ bool CSignalDiGui::CanSell(int idx) const
 }
 
 
-bool CSignalDiGui::CheckDDCrossFastMeanBuy(int idx) const
-{
-   return AreGEquals(FastDD(idx), MeanDD(idx)) && AreLEquals(FastDD(idx), MeanDD(idx));
-}
 
-
-bool CSignalDiGui::CheckDDCrossFastMeanSell(int idx) const
-{
-   return AreLEquals(FastDD(idx), MeanDD(idx)) && AreGEquals(FastDD(idx), MeanDD(idx));
-}
-
-
-
-bool CSignalDiGui::CheckDDCrossFastSlowBuy(int idx) const
-{
-   return AreGEquals(FastDD(idx), SlowDD(idx)) && AreLEquals(FastDD(idx), SlowDD(idx));
-}
-
-
-bool CSignalDiGui::CheckDDCrossFastSlowSell(int idx) const
-{
-   return AreLEquals(FastDD(idx), SlowDD(idx)) && AreGEquals(FastDD(idx), SlowDD(idx));
-}
-
-
-// Verifica se os indicadores estão no mesmo nível no candle atual
-// e se no candle anterior estava indicando a direção de uma agulhada
-// NOTE: Não espera a confirmação do cruzamento para indicar agulhada
-int CSignalDiGui::CheckAgulhadaBuyNotConfirmed(int idx) const
+int CSignalDiGui::CheckAgulhadaBuy(int idx) const
 {
    if ( 
-      AreEquals(FastDD(idx), MeanDD(idx)) && AreEquals(FastDD(idx), SlowDD(idx)) 
+      FastMA(idx) > MeanMA(idx) && FastMA(idx) > SlowMA(idx) 
       &&
-      (FastDD(idx + 1) < MeanDD(idx + 1) || SlowDD(idx + 1) > MeanDD(idx + 1))
+      FastMA(idx + 1) < MeanMA(idx + 1) && FastMA(idx + 1) < SlowMA(idx + 1)
       )
    {
       return 30;
@@ -615,62 +631,17 @@ int CSignalDiGui::CheckAgulhadaBuyNotConfirmed(int idx) const
 }
 
 
-// Verifica se os indicadores estão no mesmo nível no candle anterior
-// e se no candle pre-anterior estava indicando a direção de uma agulhada
-// No candle atual, os indicadores se cruzaram confirmando a agulhada
-int CSignalDiGui::CheckAgulhadaBuyConfirmed(int idx) const
-{
-   if ( 
-      AreGEquals(FastDD(idx), MeanDD(idx)) && AreLEquals(SlowDD(idx), MeanDD(idx))
-      &&
-      AreEquals(FastDD(idx + 1), MeanDD(idx + 1)) && AreEquals(FastDD(idx + 1), SlowDD(idx + 1)) 
-      &&
-      (FastDD(idx + 2) < MeanDD(idx + 2) || SlowDD(idx + 2) > MeanDD(idx + 2))
-      )
-   {
-      return 50;
-   }
-   return 0;
-}
-
-
-// Verifica se os indicadores estão no mesmo nível no candle atual
-// e se no candle anterior estava indicando a direção de uma agulhada
-// NOTE: Não espera a confirmação do cruzamento para indicar agulhada
-int CSignalDiGui::CheckAgulhadaSellNotConfirmed(int idx) const
+int CSignalDiGui::CheckAgulhadaSell(int idx) const
 {
 
    if ( 
-      AreEquals(FastDD(idx), MeanDD(idx)) && AreEquals(FastDD(idx), SlowDD(idx)) 
+      FastMA(idx) < MeanMA(idx) && FastMA(idx) < SlowMA(idx) 
       &&
-      (FastDD(idx + 1) > MeanDD(idx + 1) || SlowDD(idx + 1) < MeanDD(idx + 1))
+      FastMA(idx + 1) > MeanMA(idx + 1) && FastMA(idx + 1) > SlowMA(idx + 1)
       )
    {
       return 30;
    }
-   
-   
-   return 0;
-}
-
-
-// Verifica se os indicadores estão no mesmo nível no candle anterior
-// e se no candle pre-anterior estava indicando a direção de uma agulhada
-// No candle atual, os indicadores se cruzaram confirmando a agulhada
-int CSignalDiGui::CheckAgulhadaSellConfirmed(int idx) const
-{
-   
-   if ( 
-      AreLEquals(FastDD(idx), MeanDD(idx)) && AreGEquals(SlowDD(idx), MeanDD(idx))
-      &&
-      AreEquals(FastDD(idx + 1), MeanDD(idx + 1)) && AreEquals(FastDD(idx + 1), SlowDD(idx + 1)) 
-      &&
-      (FastDD(idx + 2) > MeanDD(idx + 2) || SlowDD(idx + 2) < MeanDD(idx + 2))
-      )
-   {
-      return 50;
-   }
-   
    
    return 0;
 }
