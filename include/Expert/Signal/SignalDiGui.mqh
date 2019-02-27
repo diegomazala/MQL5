@@ -23,7 +23,7 @@
 //| Parameter=Applied,ENUM_APPLIED_PRICE,PRICE_CLOSE,Prices series   |
 //| Parameter=ADXPeriod,int,8,Period of ADX                          |
 //| Parameter=ADXLevel,double,32,Level of ADX                        |
-//| Parameter=EpisilonDD,double,0.001,Max distance between cross lines     |
+//| Parameter=EpsilonDD,double,0.001,Max distance between cross lines     |
 //| Parameter=OffsetDD,double,0.01,Max distance of cross lines from MeanDD |
 //+------------------------------------------------------------------+
 // wizard description end
@@ -619,25 +619,77 @@ bool CSignalDiGui::CanSell(int idx) const
 
 int CSignalDiGui::CheckAgulhadaBuy(int idx) const
 {
+/*
    if ( 
       FastMA(idx) > MeanMA(idx) && FastMA(idx) > SlowMA(idx) 
       &&
       FastMA(idx + 1) < MeanMA(idx + 1) && FastMA(idx + 1) < SlowMA(idx + 1)
+      &&
+      SlowDD(idx) < SlowDD(idx + 1)
       )
    {
       return 30;
    }
+   */
+   
+   if ( 
+      FastDD(idx) > MeanDD(idx) && FastDD(idx) > SlowDD(idx) 
+      &&
+      FastDD(idx + 1) < MeanDD(idx + 1) && FastDD(idx + 1) < SlowDD(idx + 1)
+      &&
+      SlowDD(idx) < SlowDD(idx + 1)
+      )
+   {
+      return 50;
+   }
+   
+   if ( 
+      FastDD(idx) > MeanDD(idx) && FastDD(idx) > SlowDD(idx) 
+      &&
+      FastDD(idx + 2) < MeanDD(idx + 2) && FastDD(idx + 2) < SlowDD(idx + 2)
+      &&
+      SlowDD(idx) < SlowDD(idx + 1)
+      )
+   {
+      return 30;
+   }
+   
    return 0;
 }
 
 
 int CSignalDiGui::CheckAgulhadaSell(int idx) const
 {
-
+/*
    if ( 
       FastMA(idx) < MeanMA(idx) && FastMA(idx) < SlowMA(idx) 
       &&
       FastMA(idx + 1) > MeanMA(idx + 1) && FastMA(idx + 1) > SlowMA(idx + 1)
+      &&
+      SlowDD(idx) > SlowDD(idx + 1)
+      )
+   {
+      return 30;
+   }
+   */
+   
+   if ( 
+      FastDD(idx) < MeanDD(idx) && FastDD(idx) < SlowDD(idx) 
+      &&
+      FastDD(idx + 1) > MeanDD(idx + 1) && FastDD(idx + 1) > SlowDD(idx + 1)
+      &&
+      SlowDD(idx) > SlowDD(idx + 1)
+      )
+   {
+      return 50;
+   }
+   
+   if ( 
+      FastDD(idx) < MeanDD(idx) && FastDD(idx) < SlowDD(idx) 
+      &&
+      FastDD(idx + 2) > MeanDD(idx + 2) && FastDD(idx + 2) > SlowDD(idx + 2)
+      &&
+      SlowDD(idx) > SlowDD(idx + 1)
       )
    {
       return 30;
