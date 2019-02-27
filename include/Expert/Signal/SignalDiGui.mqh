@@ -25,6 +25,7 @@
 //| Parameter=ADXLevel,double,32,Level of ADX                        |
 //| Parameter=EpsilonDD,double,0.001,Max distance between cross lines     |
 //| Parameter=OffsetDD,double,0.01,Max distance of cross lines from MeanDD |
+//| Parameter=TimeStart,datetime,0,Max distance of cross lines from MeanDD |
 //+------------------------------------------------------------------+
 // wizard description end
 //+------------------------------------------------------------------+
@@ -121,6 +122,7 @@ protected:
    bool              CanBuy(int idx) const;
    bool              CanSell(int idx) const;
    
+   bool              IsInTimeRangeAllowed() const;
       
    
    bool CheckDDCrossFastMeanBuy(int idx) const
@@ -460,6 +462,15 @@ int CSignalDiGui::LongCondition(void)
    ///////////////////////////////////////////////////////////////////
 
 
+   ///////////////////////////////////////////////////////////////////
+   //
+   // Verifica o horário permitido de operação
+   // 
+   if (!IsInTimeRangeAllowed())
+      return 0;
+   // 
+   ///////////////////////////////////////////////////////////////////
+
    
    //--- For operation with ticks idx=0, for operation with formed bars idx=1
    int idx=StartIndex();
@@ -531,6 +542,17 @@ int CSignalDiGui::ShortCondition(void)
    // Se existe posição vendida, NÂO VENDE MAIS NADA
    // 
    if (HasPositionSell())
+      return 0;
+   // 
+   ///////////////////////////////////////////////////////////////////
+
+
+
+   ///////////////////////////////////////////////////////////////////
+   //
+   // Verifica o horário permitido de operação
+   // 
+   if (!IsInTimeRangeAllowed())
       return 0;
    // 
    ///////////////////////////////////////////////////////////////////
@@ -619,18 +641,6 @@ bool CSignalDiGui::CanSell(int idx) const
 
 int CSignalDiGui::CheckAgulhadaBuy(int idx) const
 {
-/*
-   if ( 
-      FastMA(idx) > MeanMA(idx) && FastMA(idx) > SlowMA(idx) 
-      &&
-      FastMA(idx + 1) < MeanMA(idx + 1) && FastMA(idx + 1) < SlowMA(idx + 1)
-      &&
-      SlowDD(idx) < SlowDD(idx + 1)
-      )
-   {
-      return 30;
-   }
-   */
    
    if ( 
       FastDD(idx) > MeanDD(idx) && FastDD(idx) > SlowDD(idx) 
@@ -660,19 +670,7 @@ int CSignalDiGui::CheckAgulhadaBuy(int idx) const
 
 int CSignalDiGui::CheckAgulhadaSell(int idx) const
 {
-/*
-   if ( 
-      FastMA(idx) < MeanMA(idx) && FastMA(idx) < SlowMA(idx) 
-      &&
-      FastMA(idx + 1) > MeanMA(idx + 1) && FastMA(idx + 1) > SlowMA(idx + 1)
-      &&
-      SlowDD(idx) > SlowDD(idx + 1)
-      )
-   {
-      return 30;
-   }
-   */
-   
+  
    if ( 
       FastDD(idx) < MeanDD(idx) && FastDD(idx) < SlowDD(idx) 
       &&
@@ -699,3 +697,9 @@ int CSignalDiGui::CheckAgulhadaSell(int idx) const
 }
 
 
+bool CSignalDiGui::IsInTimeRangeAllowed() const
+{
+   MqlDateTime dt;
+   datetime dtSer=TimeCurrent(dt);
+   return (dt.hour > 9 && dt.hour < 18);
+}
