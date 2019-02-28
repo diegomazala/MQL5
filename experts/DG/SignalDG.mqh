@@ -21,11 +21,13 @@
 //| Parameter=SlowMethod,ENUM_MA_METHOD,MODE_SMA,Method of slow MA   |
 //| Parameter=Shift,int,0,Time shift                                 |
 //| Parameter=Applied,ENUM_APPLIED_PRICE,PRICE_CLOSE,Prices series   |
+//| Parameter=ADXEnabled,bool,false,ADX enable/disable               |
 //| Parameter=ADXPeriod,int,8,Period of ADX                          |
 //| Parameter=ADXLevel,double,32,Level of ADX                        |
 //| Parameter=EpsilonDD,double,0.001,Max distance between cross lines     |
 //| Parameter=OffsetDD,double,0.01,Max distance of cross lines from MeanDD |
-//| Parameter=TimeStart,datetime,0,Max distance of cross lines from MeanDD |
+//| Parameter=HourStart,int,10,Hour of start operations              |
+//| Parameter=HourEnd,int,17,Hour of end operations                  |
 //+------------------------------------------------------------------+
 // wizard description end
 //+------------------------------------------------------------------+
@@ -42,6 +44,7 @@ protected:
    CiMA          m_slow_ma;        // Slow MA indicator as an object
    CiADXWilder   m_adx;			     // ADX indicator as an object
    
+   
    //--- Configurable module parameters
    int               m_period_fast;    // Period of the fast MA
    int               m_period_mean;    // Period of the mean MA
@@ -52,12 +55,15 @@ protected:
    int               m_ma_shift;       // the "time shift" parameter of the MA indicators
    ENUM_APPLIED_PRICE m_ma_applied;    // the "object of averaging" parameter of the indicator   
 
-   int               m_period_adx;     // Period of the ADX
-   double            m_level_adx;      // Level of thee ADX
+   bool              m_adx_enabled;    // ADX enable/disable
+   int               m_adx_period;     // Period of the ADX
+   double            m_adx_level;      // Level of thee ADX
    
    double            m_dd_epsilon;     // Max distance between cross lines
    double            m_dd_offset;      // Max distance of cross lines from MeanDD
    
+   int               m_hour_start;     // Hour allowed to start negotiations
+   int               m_hour_end;       // Hour to close all negotiations
 
 public:
                      CSignalDG(void);
@@ -84,8 +90,12 @@ public:
    void              Shift(int value)                    { m_ma_shift=value;           }
    void              Applied(ENUM_APPLIED_PRICE value)   { m_ma_applied=value;         }
    
-   void              ADXPeriod(int value)                { m_period_adx=value;         }
-   void              ADXLevel(double value)              { m_level_adx=value;          }
+   void              ADXEnable(bool value)               { m_adx_enabled=value;        }
+   void              ADXPeriod(int value)                { m_adx_period=value;         }
+   void              ADXLevel(double value)              { m_adx_level=value;          }
+   
+   void              HourStart(int value)                { m_hour_start=value;         }
+   void              HourEnd(int value)                  { m_hour_end=value;           }
    
    //--- Access to indicator data
    double            FastMA(const int index)             const { return(m_fast_ma.GetData(0,index)); }
@@ -200,8 +210,8 @@ CSignalDG::CSignalDG(void) :
                              m_method_mean(MODE_SMA),    // Default smoothing method of the mean MA
                              m_period_slow(20),          // Default period of the slow MA is 20
                              m_method_slow(MODE_SMA),    // Default smoothing method of the slow MA
-                             m_period_adx(8),			   // Default period of the ADX is 8
-                             m_level_adx(32.0)
+                             m_adx_period(8),			   // Default period of the ADX is 8
+                             m_adx_level(32.0)
 {
 //--- initialization of protected data
    m_used_series=USE_SERIES_OPEN+USE_SERIES_HIGH+USE_SERIES_LOW+USE_SERIES_CLOSE;
@@ -253,9 +263,9 @@ bool CSignalDG::ValidationSettings(void)
       return false;
      }
 //--- Check ADX period
-   if(m_period_adx < 1)
+   if(m_adx_period < 1)
      {
-      PrintFormat("Incorrect value set for adx period! ADXPeriod=%d", m_period_adx);
+      PrintFormat("Incorrect value set for adx period! ADXPeriod=%d", m_adx_period);
       return false;
      }
 //--- All checks are completed, everything is ok
@@ -372,7 +382,7 @@ bool CSignalDG::CreateADX(CIndicators *indicators)
       return(false);
      }
      
-   if(!m_adx.Create(m_symbol.Name(),m_period,m_period_adx))
+   if(!m_adx.Create(m_symbol.Name(),m_period,m_adx_period))
      {
       printf(__FUNCTION__+": error initializing ADX object");
       return(false);
@@ -515,15 +525,19 @@ int CSignalDG::LongCondition(void)
 
    ///////////////////////////////////////////////////////////////////
    // Tratando o ADX
-   // 
-   // ADX apontando pra cima, +10
-   signal += (ADXMain(idx) > ADXMain(idx + 1)) ? 10 : 0;
    //
-   // ADX acima do nível, +10
-   signal += (ADXMain(idx) > m_level_adx) ? 10 : 0;
+   if (m_adx_enabled)
+   {
+      // ADX apontando pra cima, +10
+      signal += (ADXMain(idx) > ADXMain(idx + 1)) ? 10 : 0;
+      //
+      // ADX acima do nível, +10
+      signal += (ADXMain(idx) > m_adx_level) ? 10 : 0;
+      //
+      // Se DI+ está acima do DI-, adiciona 10
+      signal += (ADXPlus(idx) > ADXMinus(idx)) ? 10 : 0;
+   }
    //
-   // Se DI+ está acima do DI-, adiciona 10
-   signal += (ADXPlus(idx) > ADXMinus(idx)) ? 20 : 0;
    ///////////////////////////////////////////////////////////////////
 
    //     
@@ -600,15 +614,19 @@ int CSignalDG::ShortCondition(void)
     
    ///////////////////////////////////////////////////////////////////
    // Tratando o ADX
-   // 
-   // ADX apontando pra cima, +10
-   signal += (ADXMain(idx) > ADXMain(idx + 1)) ? 10 : 0;
    //
-   // ADX acima do nível, +10
-   signal += (ADXMain(idx) > m_level_adx) ? 20 : 0;
+   if (m_adx_enabled)
+   {
+      // ADX apontando pra cima, +10
+      signal += (ADXMain(idx) > ADXMain(idx + 1)) ? 10 : 0;
+      //
+      // ADX acima do nível, +10
+      signal += (ADXMain(idx) > m_adx_level) ? 10 : 0;
+      //
+      // Se DI- está acima do DI+, adiciona 10
+      signal += (ADXMinus(idx) > ADXPlus(idx)) ? 10 : 0;
+   }
    //
-   // Se DI- está acima do DI+, adiciona 10
-   signal += (ADXMinus(idx) > ADXPlus(idx)) ? 20 : 0;
    ///////////////////////////////////////////////////////////////////
 
    //     
@@ -622,7 +640,7 @@ bool CSignalDG::CanBuy(int idx) const
    // TODO: Verificar horário de operação
 
    return ADXPlus(idx) > ADXMinus(idx)
-      && ADXMain(idx) > m_level_adx
+      && ADXMain(idx) > m_adx_level
       //&& AreGEquals(ADXMain(idx), ADXMain(idx + 1))
       && AreGEquals(FastDD(idx), MeanDD(idx))
       && MathAbs(FastDD(idx) - MeanDD(idx)) < m_dd_offset;
@@ -631,7 +649,7 @@ bool CSignalDG::CanBuy(int idx) const
 bool CSignalDG::CanSell(int idx) const
 {
    return ADXMinus(idx) > ADXPlus(idx)
-      && ADXMain(idx) > m_level_adx
+      && ADXMain(idx) > m_adx_level
       //&& AreGEquals(ADXMain(idx), ADXMain(idx + 1))
       && AreLEquals(FastDD(idx), MeanDD(idx))
       && MathAbs(FastDD(idx) - MeanDD(idx)) < m_dd_offset;
@@ -701,5 +719,5 @@ bool CSignalDG::IsInTimeRangeAllowed() const
 {
    MqlDateTime dt;
    datetime dtSer=TimeCurrent(dt);
-   return (dt.hour > 9 && dt.hour < 18);
+   return (dt.hour >= m_hour_start && dt.hour <= m_hour_end);
 }
