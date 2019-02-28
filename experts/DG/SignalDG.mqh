@@ -1,17 +1,17 @@
 //+------------------------------------------------------------------+
-//|                                                  SignalDiGui.mqh |
-//|                                      Copyright 2009-2019, DiGUI. |
+//|                                                     SignalDG.mqh |
+//|                                         Copyright 2009-2019, DG. |
 //|                               http://github.com/diegomazala/MQL5 |
 //+------------------------------------------------------------------+
 #include <Expert\ExpertSignal.mqh>
 // wizard description start
 //+------------------------------------------------------------------+
 //| Description of the class                                         |
-//| Title=Signals of indicator 'DiGui' (wip)                         |
+//| Title=Signals of indicator DG                                    |
 //| Type=SignalAdvanced                                              |
-//| Name=DiGui                                                       |
+//| Name=DG                                                          |
 //| ShortName=DG                                                     |
-//| Class=CSignalDiGui                                               |
+//| Class=CSignalDG                                                  |
 //| Page=Not needed                                                  |
 //| Parameter=FastPeriod,int,3,Period of fast MA                     |
 //| Parameter=FastMethod,ENUM_MA_METHOD,MODE_SMA,Method of fast MA   |
@@ -29,12 +29,12 @@
 //+------------------------------------------------------------------+
 // wizard description end
 //+------------------------------------------------------------------+
-//| Class CSignalDiGui.                                              |
+//| Class CSignalDG.                                                 |
 //| Purpose: Class of generator of trade signals based on            |
-//|          the 'Moving Average' indicator.                         |
+//|          the 'Moving Average' and ADXW indicator.                |
 //| Is derived from the CExpertSignal class.                         |
 //+------------------------------------------------------------------+
-class CSignalDiGui : public CExpertSignal
+class CSignalDG : public CExpertSignal
   {
 protected:
    CiMA          m_fast_ma;        // The indicator as an object
@@ -60,8 +60,8 @@ protected:
    
 
 public:
-                     CSignalDiGui(void);
-                    ~CSignalDiGui(void);
+                     CSignalDG(void);
+                    ~CSignalDG(void);
 
    //--- method of verification of settings
    virtual bool      ValidationSettings(void);
@@ -193,7 +193,7 @@ protected:
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-CSignalDiGui::CSignalDiGui(void) : 
+CSignalDG::CSignalDG(void) : 
                              m_period_fast(3),           // Default period of the fast MA is 3
                              m_method_fast(MODE_SMA),    // Default smoothing method of the fast MA
                              m_period_mean(8),           // Default period of the mean MA is 8
@@ -209,13 +209,13 @@ CSignalDiGui::CSignalDiGui(void) :
 //+------------------------------------------------------------------+
 //| Destructor                                                       |
 //+------------------------------------------------------------------+
-CSignalDiGui::~CSignalDiGui(void)
+CSignalDG::~CSignalDG(void)
 {
 }
 //+------------------------------------------------------------------+
 //| Validation settings protected data.                              |
 //+------------------------------------------------------------------+
-bool CSignalDiGui::ValidationSettings(void)
+bool CSignalDG::ValidationSettings(void)
 {
 //--- validation settings of additional filters
    if(!CExpertSignal::ValidationSettings())
@@ -266,7 +266,7 @@ bool CSignalDiGui::ValidationSettings(void)
 //+------------------------------------------------------------------+
 //| Create indicators.                                               |
 //+------------------------------------------------------------------+
-bool CSignalDiGui::InitIndicators(CIndicators *indicators)
+bool CSignalDG::InitIndicators(CIndicators *indicators)
 {
 //--- check pointer
    if(indicators==NULL)
@@ -287,7 +287,7 @@ bool CSignalDiGui::InitIndicators(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the "Fast MA" indicator                                  |
 //+------------------------------------------------------------------+
-bool CSignalDiGui::CreateFastMA(CIndicators *indicators)
+bool CSignalDG::CreateFastMA(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -312,7 +312,7 @@ bool CSignalDiGui::CreateFastMA(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the "Mean MA" indicator                                  |
 //+------------------------------------------------------------------+
-bool CSignalDiGui::CreateMeanMA(CIndicators *indicators)
+bool CSignalDG::CreateMeanMA(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -336,7 +336,7 @@ bool CSignalDiGui::CreateMeanMA(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the "Slow MA" indicator                                  |
 //+------------------------------------------------------------------+
-bool CSignalDiGui::CreateSlowMA(CIndicators *indicators)
+bool CSignalDG::CreateSlowMA(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -361,7 +361,7 @@ bool CSignalDiGui::CreateSlowMA(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the ADX indicator                                  |
 //+------------------------------------------------------------------+
-bool CSignalDiGui::CreateADX(CIndicators *indicators)
+bool CSignalDG::CreateADX(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -419,7 +419,7 @@ void GetPositionProperties()
 //| Verifica se há COMPRA aberta                                     |
 //+------------------------------------------------------------------+
 
-bool CSignalDiGui::HasPositionBuy() 
+bool CSignalDG::HasPositionBuy() 
 {
    for (int i = 0; i < PositionsTotal(); ++i)
    {
@@ -434,7 +434,7 @@ bool CSignalDiGui::HasPositionBuy()
 //+------------------------------------------------------------------+
 //| Verifica se há VENDA aberta                                      |
 //+------------------------------------------------------------------+
-bool CSignalDiGui::HasPositionSell() 
+bool CSignalDG::HasPositionSell() 
 {
    for (int i = 0; i < PositionsTotal(); ++i)
    {
@@ -450,7 +450,7 @@ bool CSignalDiGui::HasPositionSell()
 //+------------------------------------------------------------------+
 //| Calculando se há sinal de COMPRA                                 |
 //+------------------------------------------------------------------+
-int CSignalDiGui::LongCondition(void)
+int CSignalDG::LongCondition(void)
 {
    ////////////////////// NÃO COMPRA /////////////////////////////////
    //
@@ -535,7 +535,7 @@ int CSignalDiGui::LongCondition(void)
 //+------------------------------------------------------------------+
 //| Calculando se há sinal de VENDA                                  |
 //+------------------------------------------------------------------+
-int CSignalDiGui::ShortCondition(void)
+int CSignalDG::ShortCondition(void)
 {
    ///////////////////////////////////////////////////////////////////
    //
@@ -617,7 +617,7 @@ int CSignalDiGui::ShortCondition(void)
 
 }
 
-bool CSignalDiGui::CanBuy(int idx) const
+bool CSignalDG::CanBuy(int idx) const
 {
    // TODO: Verificar horário de operação
 
@@ -628,7 +628,7 @@ bool CSignalDiGui::CanBuy(int idx) const
       && MathAbs(FastDD(idx) - MeanDD(idx)) < m_dd_offset;
 }
 
-bool CSignalDiGui::CanSell(int idx) const
+bool CSignalDG::CanSell(int idx) const
 {
    return ADXMinus(idx) > ADXPlus(idx)
       && ADXMain(idx) > m_level_adx
@@ -639,7 +639,7 @@ bool CSignalDiGui::CanSell(int idx) const
 
 
 
-int CSignalDiGui::CheckAgulhadaBuy(int idx) const
+int CSignalDG::CheckAgulhadaBuy(int idx) const
 {
    
    if ( 
@@ -668,7 +668,7 @@ int CSignalDiGui::CheckAgulhadaBuy(int idx) const
 }
 
 
-int CSignalDiGui::CheckAgulhadaSell(int idx) const
+int CSignalDG::CheckAgulhadaSell(int idx) const
 {
   
    if ( 
@@ -697,7 +697,7 @@ int CSignalDiGui::CheckAgulhadaSell(int idx) const
 }
 
 
-bool CSignalDiGui::IsInTimeRangeAllowed() const
+bool CSignalDG::IsInTimeRangeAllowed() const
 {
    MqlDateTime dt;
    datetime dtSer=TimeCurrent(dt);

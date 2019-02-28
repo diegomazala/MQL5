@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                TrailingMinPrev.mqh |
+//|                                                   TrailingDG.mqh |
 //|                   Copyright 2009-2013, MetaQuotes Software Corp. |
 //|                                              http://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -10,16 +10,16 @@
 //| Title=Trailing Stop based on Min value of previos candle         |
 //| Type=Trailing                                                    |
 //| Name=DG                                                          |
-//| Class=CTrailingMinPrev                                             |
+//| Class=CTrailingDG                                             |
 //| Page=                                                            |
 //+------------------------------------------------------------------+
 // wizard description end
 //+------------------------------------------------------------------+
-//| Class CTrailingMinPrev.                                           |
+//| Class CTrailingDG.                                               |
 //| Purpose: Class of trailing stops based on minimal value of candle.|
 //|              Derives from class CExpertTrailing.                 |
 //+------------------------------------------------------------------+
-class CTrailingMinPrev : public CExpertTrailing
+class CTrailingDG : public CExpertTrailing
   {
 protected:
    CiMA          m_fast_ma;        // The indicator as an object
@@ -43,8 +43,8 @@ protected:
    double            m_dd_epsilon;     // Max distance between cross lines
 
 public:
-                     CTrailingMinPrev(void);
-                    ~CTrailingMinPrev(void);
+                     CTrailingDG(void);
+                    ~CTrailingDG(void);
    //--- methods of initialization of protected data
    virtual bool      InitIndicators(CIndicators *indicators);
    virtual bool      ValidationSettings(void);
@@ -127,7 +127,7 @@ protected:
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-void CTrailingMinPrev::CTrailingMinPrev(void) :
+void CTrailingDG::CTrailingDG(void) :
                              m_period_fast(3),           // Default period of the fast MA is 3
                              m_method_fast(MODE_SMA),    // Default smoothing method of the fast MA
                              m_period_mean(8),           // Default period of the mean MA is 8
@@ -141,13 +141,13 @@ void CTrailingMinPrev::CTrailingMinPrev(void) :
 //+------------------------------------------------------------------+
 //| Destructor                                                       |
 //+------------------------------------------------------------------+
-void CTrailingMinPrev::~CTrailingMinPrev(void)
+void CTrailingDG::~CTrailingDG(void)
   {
   }
 //+------------------------------------------------------------------+
 //| Validation settings protected data.                              |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::ValidationSettings(void)
+bool CTrailingDG::ValidationSettings(void)
   {
    if(!CExpertTrailing::ValidationSettings())
       return(false);
@@ -195,7 +195,7 @@ bool CTrailingMinPrev::ValidationSettings(void)
 //+------------------------------------------------------------------+
 //| Checking for input parameters and setting protected data.        |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::InitIndicators(CIndicators *indicators)
+bool CTrailingDG::InitIndicators(CIndicators *indicators)
   {
 //--- check
    if(indicators==NULL)
@@ -214,7 +214,7 @@ bool CTrailingMinPrev::InitIndicators(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the "Fast MA" indicator                                  |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::CreateFastMA(CIndicators *indicators)
+bool CTrailingDG::CreateFastMA(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -239,7 +239,7 @@ bool CTrailingMinPrev::CreateFastMA(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the "Mean MA" indicator                                  |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::CreateMeanMA(CIndicators *indicators)
+bool CTrailingDG::CreateMeanMA(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -263,7 +263,7 @@ bool CTrailingMinPrev::CreateMeanMA(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the "Slow MA" indicator                                  |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::CreateSlowMA(CIndicators *indicators)
+bool CTrailingDG::CreateSlowMA(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -288,7 +288,7 @@ bool CTrailingMinPrev::CreateSlowMA(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Creates the ADX indicator                                  |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::CreateADX(CIndicators *indicators)
+bool CTrailingDG::CreateADX(CIndicators *indicators)
 {
 //--- Checking the pointer
    if(indicators==NULL) return(false);
@@ -312,34 +312,38 @@ bool CTrailingMinPrev::CreateADX(CIndicators *indicators)
 //+------------------------------------------------------------------+
 //| Checking trailing stop and/or profit for long position.          |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::CheckTrailingStopLong(CPositionInfo *position,double &sl,double &tp)
+bool CTrailingDG::CheckTrailingStopLong(CPositionInfo *position,double &sl,double &tp)
 {
    if(position==NULL)
       return(false);
 
    double price =m_symbol.Ask();
+   double ma = FastMA(m_period_fast);
 
-   sl = FastMA(2);
-
-   tp=EMPTY_VALUE;
-   
+   if (price < ma)
+      tp = price;
+   else
+      sl = ma;
+  
    return(sl!=EMPTY_VALUE);
    
 }
 //+------------------------------------------------------------------+
 //| Checking trailing stop and/or profit for short position.         |
 //+------------------------------------------------------------------+
-bool CTrailingMinPrev::CheckTrailingStopShort(CPositionInfo *position,double &sl,double &tp)
+bool CTrailingDG::CheckTrailingStopShort(CPositionInfo *position,double &sl,double &tp)
 {
    
    if(position==NULL)
       return(false);
 
-   double price =m_symbol.Ask();
+   double price = m_symbol.Ask();
+   double ma = FastMA(m_period_fast);
 
-   sl = FastMA(2);
-
-   tp=EMPTY_VALUE;
+   if (price > ma)
+      tp = price;
+   else
+      sl = ma;
    
    
    return(sl!=EMPTY_VALUE);
