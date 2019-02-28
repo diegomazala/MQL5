@@ -511,7 +511,7 @@ int CSignalDG::LongCondition(void)
    // FastDidi acima da MeanDidi e apotando pra cima
    signal += (FastDD(idx) > MeanDD(idx) && FastDD(idx) > FastDD(idx + 1)) ? 10 : 0;
    ///////////////////////////////////////////////////////////////////      
-    
+  */  
 
    ///////////////////////////////////////////////////////////////////
    // Tratando o ADX
@@ -525,7 +525,7 @@ int CSignalDG::LongCondition(void)
    // Se DI+ está acima do DI-, adiciona 10
    signal += (ADXPlus(idx) > ADXMinus(idx)) ? 20 : 0;
    ///////////////////////////////////////////////////////////////////
-*/
+
    //     
    // Retorna a força do sinal entre 0 e 100 
    return MathMax(0, MathMin(100, signal));
@@ -595,7 +595,7 @@ int CSignalDG::ShortCondition(void)
    // FastDidi abaixo da MeanDidi e apotando pra baixo
    signal += (FastDD(idx) < MeanDD(idx) && FastDD(idx) < FastDD(idx + 1)) ? 10 : 0;
    ///////////////////////////////////////////////////////////////////      
-    
+    */
     
     
    ///////////////////////////////////////////////////////////////////
@@ -610,7 +610,7 @@ int CSignalDG::ShortCondition(void)
    // Se DI- está acima do DI+, adiciona 10
    signal += (ADXMinus(idx) > ADXPlus(idx)) ? 20 : 0;
    ///////////////////////////////////////////////////////////////////
-*/
+
    //     
    // Retorna a força do sinal entre 0 e 100 
    return MathMax(0, MathMin(100, signal));
