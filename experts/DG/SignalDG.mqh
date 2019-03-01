@@ -717,6 +717,7 @@ int CSignalDG::CheckAgulhadaSell(int idx) const
 
 bool CSignalDG::IsInTimeRangeAllowed() const
 {
+return true;
    MqlDateTime dt;
    datetime dtSer=TimeCurrent(dt);
    return (dt.hour >= m_hour_start && dt.hour <= m_hour_end);
