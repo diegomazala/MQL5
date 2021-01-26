@@ -23,7 +23,7 @@ public:
    {
       NewBar = false;
       
-      datetime currentCandleTime = SeriesInfoInteger(_Symbol, _Period, SERIES_LASTBAR_DATE);
+      datetime currentCandleTime = (datetime)SeriesInfoInteger(_Symbol, _Period, SERIES_LASTBAR_DATE);
       if (LastCandleTime != currentCandleTime)
       {
          LastCandleTime = currentCandleTime;
