@@ -36,12 +36,13 @@ $Log = Get-Content -Path $LogFile | Where-Object {$_ -ne ""} | Select-Object -Sk
 
 #Green color for successful Compilation. Otherwise (error/warning), Red!
 $WhichColor = "Red"
-$Log | ForEach-Object { if ($_.Contains("0 error(s), 0 warning(s)")) { $WhichColor="Green" } }
+$Log | ForEach-Object { if ($_.Contains("0 errors")) { $WhichColor="Green" } }
 
 #runs through all the log lines...
 $Log | ForEach-Object {
      #ignores the ": information: error generating code" line when ME was successful
-     if (-Not $_.Contains("information:")) {
+     if (-Not $_.Contains("information:")) 
+     {
            #common log line... just print it...
            Write-Host $_ -ForegroundColor $WhichColor
      }
@@ -49,3 +50,4 @@ $Log | ForEach-Object {
 
 #get the MT Terminal back if all went well...
 if ( $WhichColor -eq "Green") { & "$Mt5Terminal" }
+

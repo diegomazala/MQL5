@@ -17,6 +17,7 @@ public:
       LastCandleTime = 0;
       Counter = 0;
       NewBar = false;
+      ResetCounterPerDay = false;
    }
    
    void OnTick()
@@ -30,6 +31,13 @@ public:
          Counter = Counter + 1;
          NewBar = true;
       }
+
+      datetime today = (datetime)SeriesInfoInteger(_Symbol, PERIOD_D1, SERIES_LASTBAR_DATE);
+      if (LastDay != today)
+      {
+         Counter = 1;
+         LastDay = today;
+      }
    }
    
    ulong GetCounter() const 
@@ -41,10 +49,22 @@ public:
    {
       return NewBar;
    }
+
+   void ResetPerDay(bool reset)
+   {
+      ResetCounterPerDay = reset;
+   }
+
+   bool ResetPerDay()
+   {
+      return ResetCounterPerDay;
+   }
  
 private:  
    datetime LastCandleTime;
    ulong Counter;
    bool NewBar;
-   
+   bool ResetCounterPerDay;
+
+   datetime LastDay;
 };

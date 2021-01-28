@@ -4,19 +4,7 @@
    "version": "2.0.0",
    "tasks": [
       {
-         "label": "Compile-Project-X",
-         "type": "shell",
-         "command": "${workspaceFolder}/Compile-MQL.ps1 ${workspaceFolder}/Experts/DG/DG_DaveLandry.mq5",
-         "presentation": {
-               "echo": true,
-               "reveal": "always",
-               "focus": false,
-               "panel": "shared",
-               "showReuseMessage": false
-         }
-      },
-      {
-         "label": "Compile-MQL",
+         "label": "build",
          "type": "shell",
          "command": "${workspaceFolder}/Compile-MQL.ps1 ${file} ${config:mt5-editor} ${config:mt5-terminal}",
          "presentation": {
@@ -31,8 +19,8 @@
                "isDefault": true
          }
       },
-      {   //set the label ID for the MQL5 Reference context-sensitive help to be launched
-         "label": "launch_offline_help",
+      {   
+         "label": "run",
          "type": "shell",
          "presentation": {
                "echo": false,
@@ -41,10 +29,22 @@
                "panel": "shared",
                "showReuseMessage": false
          },
-         "command": "hh.exe",
-         "args": [
-               "${workspaceFolder}/../../Help/mql5.chm::/${selectedText}.htm"
-         ]
-      }
+         "command": "${config:mt5-terminal}"
+      },
+      {   //set the label ID for the MQL5 Reference context-sensitive help to be launched
+            "label": "launch_offline_help",
+            "type": "shell",
+            "presentation": {
+                  "echo": false,
+                  "reveal": "silent",
+                  "focus": false,
+                  "panel": "shared",
+                  "showReuseMessage": false
+            },
+            "command": "hh.exe",
+            "args": [
+                  "${workspaceFolder}/../../Help/mql5.chm::/${selectedText}.htm"
+            ]
+         }
    ]
 }
