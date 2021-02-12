@@ -20,7 +20,7 @@ if ($FileToCompile.Contains(" ")) {
 }
 
 #first of all, kill MT Terminal (if running)... otherwise it will not see the new compiled version of the code...
-Get-Process -Name terminal64 -ErrorAction SilentlyContinue | Where-Object {$_.Id -gt 0} | Stop-Process
+#Get-Process -Name terminal64 -ErrorAction SilentlyContinue | Where-Object {$_.Id -gt 0} | Stop-Process
 
 #fires up the Metaeditor compiler...
 & "$Mt5Editor" /compile:"$FileToCompile" /log:"$LogFile" /inc:"${workspaceFolder}" | Out-Null
@@ -49,5 +49,5 @@ $Log | ForEach-Object {
 }
 
 #get the MT Terminal back if all went well...
-if ( $WhichColor -eq "Green") { & "$Mt5Terminal" }
+#if ( $WhichColor -eq "Green") { & "$Mt5Terminal" }
 
