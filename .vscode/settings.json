@@ -1,6 +1,6 @@
 {
    "C_Cpp.errorSquiggles": "Disabled",
-   "window.zoomLevel": 0,
+   "window.zoomLevel": 1,
    "files.associations": {
        "*.mqh":"cpp",
        "*.mq4":"cpp",
@@ -8,5 +8,6 @@
     },
     "editor.tabSize": 3,
     "mt5-editor":"D:/Programs/MT5/Demo04/metaeditor64.exe",
-    "mt5-terminal":"D:/Programs/MT5/Demo04/terminal64.exe"
+    "mt5-terminal": "D:/Programs/MT5/Demo04/terminal64.exe",
+    "python.pythonPath": "C:\\Programs\\Python\\Python38\\python.exe"
 }
