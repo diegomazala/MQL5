@@ -6,8 +6,9 @@
        "*.mq4":"cpp",
        "*.mq5":"cpp"
     },
-    "editor.tabSize": 3,
+    "editor.tabSize": 4,
     "mt5-editor":"D:/Programs/MT5/Demo04/metaeditor64.exe",
     "mt5-terminal": "D:/Programs/MT5/Demo04/terminal64.exe",
-    "python.pythonPath": "C:\\Programs\\Python\\Python38\\python.exe"
+    "python.pythonPath": "C:\\Programs\\Python\\Python38\\python.exe",
+    "editor.detectIndentation": false
 }
